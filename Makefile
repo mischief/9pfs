@@ -2,7 +2,10 @@ TARG=		simplefuse
 CC=		cc
 OBJ=		simplefuse.o
 DEBUG=		-g
-CFLAGS=		-O2 -pipe ${DEBUG} -Wall
+CFLAGS=		-O2 -pipe\
+			${DEBUG} -Wall\
+			-D_FILE_OFFSET_BITS=64\
+			-DFUSE_USE_VERSION=26
 LDADD=		-lfuse
 
 ${TARG}:	${OBJ}

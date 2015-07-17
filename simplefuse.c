@@ -4,6 +4,7 @@
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 int
@@ -12,11 +13,17 @@ fs_getattr(const char *path, struct stat *st)
 	if(strcmp(path, "/") == 0){
 		st->st_mode = S_IFDIR | 0555;
 		st->st_nlink = 2;
-		st->st_size = 20;
+		st->st_size = 0;
+		st->st_uid = getuid();
+		st->st_gid = getgid();
+		st->st_atime = st->st_mtime = st->st_ctime = time(0);
 	}else if(strcmp(path, "/hello") == 0){
 		st->st_mode = S_IFREG | 0444;
 		st->st_nlink = 1;
 		st->st_size = 6;
+		st->st_uid = getuid();
+		st->st_gid = getgid();
+		st->st_atime = st->st_mtime = st->st_ctime = time(0);
 	}else
 		return -ENOENT;
 	return (0);

@@ -1,0 +1,60 @@
+it's fusedispatch that calls a thread to handle the fuse message.
+That runs in its own proc and reads from fusechan. fusereader also
+runs in its own proc and gets FuseMsg from readfusemsg and sends
+it on to fusechan.
+
+It is readfusemsg (in fuse.c) that constructs the FuseMsg from what
+it reads off the fusefd.
+
+Man this gets complicated. There appears to be a lot of machinery
+that converts nodeids (numbers associated with opened files?) to
+actual paths. I shouldn't need to worry about that, I just need to
+wade my way through all that.
+
+fuse ops rsc has implemented.
+struct {
+	int op;
+	void (*fn)(FuseMsg*);
+} fuselist[] = {
+	{ FUSE_LOOKUP,		fuselookup },
+	{ FUSE_FORGET,		fuseforget },
+	{ FUSE_GETATTR,		fusegetattr },
+	{ FUSE_SETATTR,		fusesetattr },
+	/*
+	 * FUSE_SYMLINK, FUSE_MKNOD are unimplemented.
+	 */
+	{ FUSE_READLINK,	fusereadlink },
+	{ FUSE_MKDIR,		fusemkdir },
+	{ FUSE_UNLINK,		fuseunlink },
+	{ FUSE_RMDIR,		fusermdir },
+	{ FUSE_RENAME,		fuserename },
+	/*
+	 * FUSE_LINK is unimplemented.
+	 */
+	{ FUSE_OPEN,		fuseopen },
+	{ FUSE_READ,		fuseread },
+	{ FUSE_WRITE,		fusewrite },
+	{ FUSE_STATFS,		fusestatfs },
+	{ FUSE_RELEASE,		fuserelease },
+	{ FUSE_FSYNC,		fusefsync },
+	/*
+	 * FUSE_SETXATTR, FUSE_GETXATTR, FUSE_LISTXATTR, and
+	 * FUSE_REMOVEXATTR are unimplemented. 
+	 * FUSE will stop sending these requests after getting
+	 * an -ENOSYS reply (see dispatch below).
+	 */
+	{ FUSE_FLUSH,		fuseflush },
+	/*
+	 * FUSE_INIT is handled in initfuse and should not be seen again.
+	 */
+	{ FUSE_OPENDIR,		fuseopendir },
+	{ FUSE_READDIR,		fusereaddir },
+	{ FUSE_RELEASEDIR,	fusereleasedir },
+	{ FUSE_FSYNCDIR,	fusefsyncdir },
+	{ FUSE_ACCESS,		fuseaccess },
+	{ FUSE_CREATE,		fusecreate },
+};
+
+So a tutorial says you start with init, getattr, and readdir.
+Then you have a functioning informational file system that you
+can't do anything to do.

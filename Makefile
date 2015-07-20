@@ -14,7 +14,7 @@ ${TARG}:	${OBJS}
 	${CC} ${LDFLAGS} -o $@ $? ${LDADD}
 
 .c.o:
-	${CC} -c ${CFLAGS} $<
+	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f *.o simplefuse 9pfs
+	rm -f ${OBJS} ${TARG} simplefuse

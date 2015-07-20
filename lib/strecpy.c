@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#define nil NULL
+
 char*
 strecpy(char *to, char *e, char *from)
 {

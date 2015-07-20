@@ -9,7 +9,7 @@ emalloc(size_t size)
 {
 	void	*v;
 
-	if((v = malloc(size)) == nil)
+	if((v = malloc(size)) == NULL)
 		err(1, "emalloc: out of memory");
 	memset(v, 0, size);
 	return v;

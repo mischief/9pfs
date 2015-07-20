@@ -1,13 +1,3 @@
-#ifndef _FCALL_H_
-#define _FCALL_H_ 1
-#ifdef __cplusplus
-extern "C" {
-#endif
-/*
-#pragma	src	"/sys/src/libc/9sys"
-#pragma	lib	"libc.a"
-*/
-
 #define	VERSION9P	"9P2000"
 #define	MAXWELEM	16
 
@@ -131,19 +121,4 @@ uint	convM2Du(uchar*, uint, Dir*, char*, int);
 uint	convD2Mu(Dir*, uchar*, uint, int);
 uint	sizeD2Mu(Dir*, int);
 
-int	fcallfmt(Fmt*);
-int	dirfmt(Fmt*);
-int	dirmodefmt(Fmt*);
-
 int	read9pmsg(int, void*, uint);
-
-/*
-#pragma	varargck	type	"F"	Fcall*
-#pragma	varargck	type	"M"	ulong
-#pragma	varargck	type	"D"	Dir*
-*/
-
-#ifdef __cplusplus
-}
-#endif
-#endif

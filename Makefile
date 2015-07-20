@@ -1,6 +1,5 @@
-TARG=		simplefuse
+TARGS=		simplefuse 9pfs
 CC=		cc
-OBJ=		simplefuse.o
 DEBUG=		-g
 CFLAGS=		-O2 -pipe\
 			${DEBUG} -Wall\
@@ -8,11 +7,13 @@ CFLAGS=		-O2 -pipe\
 			-DFUSE_USE_VERSION=26
 LDADD=		-lfuse
 
-${TARG}:	${OBJ}
-	${CC} ${LDFLAGS} ${LDSTATIC} -o $@ ${OBJ} ${LDADD}
+all:	${TARGS}
 
-%.o:	%.c
-	${CC} -c ${CFLAGS} $?
+${TARGS}:	$@.o
+	${CC} ${LDFLAGS} -o $@ $? ${LDADD}
+
+.c.o:
+	${CC} -c ${CFLAGS} $<
 
 clean:
-	rm -f *.o ${TARG}
+	rm -f *.o simplefuse 9pfs

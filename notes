@@ -58,3 +58,54 @@ struct {
 So a tutorial says you start with init, getattr, and readdir.
 Then you have a functioning informational file system that you
 can't do anything to do.
+
+Here is a transcript of a walk and read:
+[0 frog:~]$ 9p -D -na pika.codigo.co read usr/glenda/lib/profile
+<- Tversion tag 0 msize 8192 version '9P2000'
+-> Rversion tag 65535 msize 8192 version '9P2000'
+<- Tattach tag 0 fid 0 afid -1 uname ben aname 
+-> Rattach tag 0 qid (0000000000000001 25 d)
+<- Twalk tag 0 fid 0 newfid 1 nwname 4 0:usr 1:glenda 2:lib 3:profile 
+-> Rwalk tag 0 nwqid 4 0:(000000000000000e 3 d) 1:(000000000000000f 4 d) 2:(000000000000c081 5 d) 3:(000000000000c083 2 ) 
+<- Topen tag 0 fid 1 mode 0
+-> Ropen tag 0 qid (000000000000c083 2 ) iounit 8168
+<- Tread tag 0 fid 1 offset 0 count 4096
+-> Rread tag 0 count 830 '62696e64 202d6120 24686f6d 652f6269 6e2f7263 202f6269 6e0a6269 6e64202d 61202468 6f6d652f 62696e2f 24637075 74797065 202f6269 6e0a6d6f 756e7420'
+bind -a $home/bin/rc /bin
+bind -a $home/bin/$cputype /bin
+mount -qC /srv/boot /n/other other
+bind -qc /n/other/usr/$user/tmp $home/tmp
+bind -c $home/tmp /tmp
+if(! syscall create /tmp/xxx 1 0666 >[2]/dev/null)
+	ramfs	# in case we're running off a cd
+font=/lib/font/bit/vga/unicode.font
+switch($service){
+case terminal
+	if(! webcookies >[2]/dev/null)
+		webcookies -f /tmp/webcookies
+	webfs
+	plumber
+	echo -n accelerated > '#m/mousectl'
+	echo -n 'res 3' > '#m/mousectl'
+	prompt=('term% ' '	')
+	fn term%{ $* }
+	rio -i riostart
+case cpu
+	bind /mnt/term/dev/cons /dev/cons
+	bind -q /mnt/term/dev/consctl /dev/consctl
+	>[2] /dev/null {
+		cp /dev/sysname /mnt/term/dev/label
+		if(wsys=`{cat /mnt/term/env/wsys})
+			wsys=/mnt/term^$wsys
+	} 
+	bind -a /mnt/term/dev /dev
+	prompt=('cpu% ' '	')
+	fn cpu%{ $* }
+case con
+	prompt=('cpu% ' '	')
+}
+<- Tread tag 0 fid 1 offset 830 count 4096
+-> Rread tag 0 count 0 ''
+<- Tclunk tag 0 fid 1
+-> Rclunk tag 0
+

@@ -1,4 +1,5 @@
-TARGS=		simplefuse 9pfs
+TARG=		9pfs
+OBJS=		9pfs.o util.o lib/strecpy.o
 CC=		cc
 DEBUG=		-g
 CFLAGS=		-O2 -pipe\
@@ -7,9 +8,9 @@ CFLAGS=		-O2 -pipe\
 			-DFUSE_USE_VERSION=26
 LDADD=		-lfuse
 
-all:	${TARGS}
+all:	${TARG}
 
-${TARGS}:	$@.o
+${TARG}:	${OBJS}
 	${CC} ${LDFLAGS} -o $@ $? ${LDADD}
 
 .c.o:

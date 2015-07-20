@@ -109,3 +109,7 @@ case con
 <- Tclunk tag 0 fid 1
 -> Rclunk tag 0
 
+
+So how to handle errors...
+set a global string? return the error?
+return -1.

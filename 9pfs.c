@@ -7,9 +7,14 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "dat.h"
 
-uint32_t fid(char *path);
+#include "dat.h"
+#include "fcall.h"
+#include "libc.h"
+#include "util.h"
+
+uint32_t	fid(char *);
+PPFid		*lookup(char*);
 
 int
 main(void)
@@ -20,9 +25,33 @@ main(void)
 uint32_t
 fid(char *path)
 {
-	uint32_t	f;
-	Fidl		fl;
+	PFid	*f;
 
-	fl = lookup(*path);
-	if(fl->fid == nil)
-		fl->fid = 
+	f = lookup(path);
+	if(f->fid == nil)
+		f->fid = p9walk(&f->fid, path);
+	return f->fid;
+}
+
+PFid
+lookup(char *path)
+{
+	PFid	*f;
+	int	siz, h;
+
+	h = hash(path);
+	for(f = fidhash[h]; f != nil; f = f->link){
+		if(strcmp(f->path, path) == 0)
+			break;
+	}
+	if(f == nil){
+		f = emalloc(sizeof(*f));
+		siz = strlen(path) + 1;
+		f->path = emalloc(siz);
+		strecpy(f->path, f->path + siz, path);
+		f->link = fidhash[h];
+		fidhash[h] = f;
+	}
+	return f;
+}
+

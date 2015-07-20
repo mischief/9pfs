@@ -1,0 +1,1 @@
+char	*strecpy(char*, char*, char*);

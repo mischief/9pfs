@@ -1,10 +1,14 @@
-typedef struct Fidl Fidl;
+enum
+{
+	NHASH=1009
+};
 
-struct Fidl
+typedef struct PFid	PFid;
+struct PFid
 {
 	char		*path;
 	uint32_t	fid;
-	Fidl		*link;
+	PFid		*link;
 };
 
-Fidl	fidhash[NHASH];
+PFid	*fidhash[NHASH];

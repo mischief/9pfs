@@ -11,7 +11,7 @@ LDADD=		-lfuse
 all:	${TARG}
 
 ${TARG}:	${OBJS}
-	${CC} ${LDFLAGS} -o $@ $? ${LDADD}
+	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LDADD}
 
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<

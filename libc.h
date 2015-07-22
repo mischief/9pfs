@@ -1,3 +1,5 @@
+#define nil NULL
+
 typedef uint64_t u64int;
 typedef int64_t s64int;
 typedef uint8_t u8int;

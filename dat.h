@@ -3,12 +3,14 @@ enum
 	NHASH=1009
 };
 
-typedef struct PFid	PFid;
-struct PFid
+typedef struct FFid	FFid;
+struct FFid
 {
+	FFid		*link;
 	char		*path;
+	int		mode;
 	uint32_t	fid;
-	PFid		*link;
+	Qid		qid;
 };
 
-PFid	*fidhash[NHASH];
+FFid	*fidhash[NHASH];

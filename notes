@@ -113,3 +113,74 @@ case con
 So how to handle errors...
 set a global string? return the error?
 return -1.
+
+where are all my notes?
+
+FUCK
+
+how do we handle checking if the file changed? We just get a fresh
+stat of that fid?
+
+
+
+
+
+
+
+/*
+uint32_t
+fid(char *path)
+{
+	PFid	*f;
+
+	f = lookup(path);
+	if(f->fid == 0)
+		f->fid = p9walk(path);
+	return f->fid;
+}
+
+PFid*
+lookup(char *path)
+{
+	FFid	*f;
+	int	siz, h;
+
+	h = hash(path);
+	for(f = fidhash[h]; f != NULL; f = f->link){
+		if(strcmp(f->path, path) == 0)
+			break;
+	}
+	if(f == NULL){
+		f = emalloc(sizeof(*f));
+		siz = strlen(path) + 1;
+		f->path = emalloc(siz);
+		strecpy(f->path, f->path + siz, path);
+		f->link = fidhash[h];
+		fidhash[h] = f;
+	}
+	return f;
+}
+
+uint32_t
+p9walk(char *path)
+{
+	struct Fcall f;
+	char	*w[MAXWELEM], *p, *ap;
+	size_t	siz;
+	uint	nap;
+
+	cleanname(path);
+	siz = strlen(path) + 1;
+	p = emalloc(len);
+	strecpy(p, p + siz, path);
+	f.nwname = getfields(p, f.wname, MAXWELEM, "/");
+	f.type = Twalk;
+	f.fid = ROOTFID;
+	f.tag = newtag();
+	f.newfid = newfid();
+	nap = convS2M(f);
+	ap = malloc(n);
+	convS2M(f, ap, nap);
+	write(p9fd, ap, nap);
+	read9pmsg(p9fd, 
+*/

@@ -1,5 +1,11 @@
 TARG=		9pfs
-OBJS=		9pfs.o util.o lib/strecpy.o
+OBJS=		9pfs.o\
+		util.o\
+		lib/strecpy.o\
+		lib/convD2M.o\
+		lib/convM2D.o\
+		lib/convM2S.o\
+		lib/convS2M.o
 CC=		cc
 DEBUG=		-g
 CFLAGS=		-O2 -pipe\

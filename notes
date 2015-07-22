@@ -1,3 +1,8 @@
+rsc uses a single function for all actual calls to the 9p server:
+/usr/local/plan9/src/lib9pclient/fs.c:/^_fsrpc
+
+might want to adapt that...
+
 it's fusedispatch that calls a thread to handle the fuse message.
 That runs in its own proc and reads from fusechan. fusereader also
 runs in its own proc and gets FuseMsg from readfusemsg and sends

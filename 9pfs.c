@@ -36,6 +36,7 @@ main(int argc, char *argv[])
 	char			*addr;
 	int			c, UFLAG, TFLAG;
 
+	addr = NULL;
 	TFLAG = UFLAG = 0;
 	while((c = getopt(argc, argv, "u:t:")) != -1){
 		switch(c){
@@ -67,7 +68,7 @@ main(int argc, char *argv[])
 		p9addr.sun_path+sizeof(p9addr.sun_path),
 		addr);
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
-	connect(srvfd, &p9addr, sizeof(p9addr));
+	connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr));
 	fuse_main(argc, argv, &fsops, NULL);
 	exit(0);
 }
@@ -84,6 +85,7 @@ p9version(int fd, uint32_t *m)
 	vcall.tag = (ushort)~0;
 	vcall.msize = *m;
 	vcall.version = VERSION9P;
+
 	s = sizeS2M(&vcall);
 	if(convS2M(&vcall, buf, s) != s)
 		errx(1, "Bad Fcall conversion.");

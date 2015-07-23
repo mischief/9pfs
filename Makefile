@@ -1,5 +1,6 @@
 TARG=	9pfs
 OBJS=	9pfs.o\
+		p9.o\
 		util.o\
 		lib/strecpy.o\
 		lib/convD2M.o\

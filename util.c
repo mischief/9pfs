@@ -14,3 +14,13 @@ emalloc(size_t size)
 	memset(v, 0, size);
 	return v;
 }
+
+void*
+erealloc(void *p, size_t size)
+{
+	void	*v;
+
+	if((v = erealloc(p, size)) == NULL)
+		err(1, "emalloc: out of memory");
+	return v;
+}

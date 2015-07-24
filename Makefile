@@ -6,7 +6,9 @@ OBJS=	9pfs.o\
 		lib/convD2M.o\
 		lib/convM2D.o\
 		lib/convM2S.o\
-		lib/convS2M.o
+		lib/convS2M.o\
+		lib/read9pmsg.o\
+		lib/readn.o
 CC=	cc
 DEBUG=	-g
 CFLAGS=	-O2 -pipe\

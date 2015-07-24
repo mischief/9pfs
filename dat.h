@@ -1,5 +1,7 @@
 enum
 {
+	RERROR,
+	RMISS,
 	NHASH=1009
 };
 
@@ -15,5 +17,4 @@ struct FFid
 
 FFid	*fidhash[NHASH];
 
-int	msize;
 int	srvfd;

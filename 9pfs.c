@@ -14,7 +14,7 @@
 #include "libc.h"
 #include "dat.h"
 #include "fcall.h"
-#include "p9.h"
+#include "9p.h"
 #include "util.h"
 
 FFid		*rootfid;

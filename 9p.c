@@ -95,32 +95,43 @@ _9pwalk(char *path, FFid *f)
 {
 	Fcall	twalk, rwalk;
 	char	*cpath, *buf, *p;
-	int	nwalk, i, clunkme;
+	uin32_t	oldfid;
+	int	nwalk, i;
 
-	/* clunkme needs to be the old walk, but it can't
-	 * be root either
-	 */
+	memset(twalk, 0, sizeof(twalk));
 	clunkme = 0;
 	buf = estrdup(path);
 	cleanname(buf);
 	curpath = buf;
-	for(nwalk = 0; curpath != NULL && *curpath != '\0'; )
+	for(nwalk = 0; curpath != NULL && *curpath != '\0'; nwalk++){
 		for(i = 0; i < MAXWELEM && *curpath != '\0'; ){
 			twalk.wname[i++] = curpath;
 			if((curpath = strchr(curpath, '/')) == NULL)
 				break;
 			*curpath++ = '\0';
 		}
+		_9pclunk(oldfid);
+		oldfid = twalk.newfid;
 		twalk.type = Twalk;
-		twalk.fid = nwalk ? rootfid : rwalk.fid;
+		twalk.fid = nwalk ? rootfid : twalk.newfid;
 		twalk.newfid = uniqfid();
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
-			_9pclunk(clunkme);
 			free(buf);
 			return -1
 		}
 		if(rwalk.nwqid != twalk.nwname)
 			return -ENOENT;
-		f->qid = rwalk.wqid[rwalk.nwqid - 1];
-		f->fid = 
+	}
+	f->path = cleanname(estrdup(path));
+	f->fid = twalk.newfid;
+	f->qid = rwalk.wqid[rwalk.nwqid - 1];
+	f->offset = 0;
+	return 0;
+}
+
+int
+_9pclunk(uint32_t fid)
+{
+	return 0;
+}

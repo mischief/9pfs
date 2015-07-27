@@ -189,3 +189,21 @@ p9walk(char *path)
 	write(p9fd, ap, nap);
 	read9pmsg(p9fd, 
 */
+
+
+1st time:
+oldfid 0
+fid rootfid
+newfid uniqfid
+
+2nd time
+0 is clunked
+oldfid is uniqfid
+fid uniqfid
+newfid uniqfid2
+
+3rd time
+uniqfid is clunked
+oldfid is uniqfid2
+fid is uniqfid2
+newfid is uniqfid3

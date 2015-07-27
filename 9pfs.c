@@ -17,9 +17,18 @@
 #include "9p.h"
 #include "util.h"
 
-FFid		*rootfid;
-
 void	usage(void);
+
+int
+_9pgetattr(const char *path, struct stat *st)
+{
+	FFid	f;
+	int	r;
+
+	if((r = _9pwalk(path, &f)) != 0)
+		return r;
+	return _9pstat(f, st);
+}
 
 struct fuse_operations fsops = {
 };

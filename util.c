@@ -24,3 +24,13 @@ erealloc(void *p, size_t size)
 		err(1, "emalloc: out of memory");
 	return v;
 }
+
+char*
+estrdup(const char *s)
+{
+	char	*r;
+
+	if((r = strdup(s)) == NULL)
+		err(1, "estrdup: out of memory");
+	return r;
+}

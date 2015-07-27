@@ -1,8 +1,9 @@
 #include <sys/types.h>
-#include <sys/stdint.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
+#include <pwd.h>
 #include <err.h>
 
 #include "libc.h"
@@ -14,6 +15,7 @@
 FFid	*rootfid;
 char	*tbuf;
 char	*rbuf;
+int	fids;
 int	msize;
 
 void
@@ -23,8 +25,8 @@ init9p(int m)
 		errx(1, "Bad msize");
 	tbuf = emalloc(msize);
 	rbuf = emalloc(msize);
-	if((rootfid = _9pattach(srvfd, 0, (uint16_t)~0)) == NULL)
-		errx(1, "Could not attach.");
+	if((rootfid = _9pattach(srvfd, 0, NOFID)) == NULL)
+		errx(1, "Could not attach");
 }
 
 int
@@ -53,24 +55,72 @@ _9pversion(int fd, uint32_t m)
 	t = emalloc(m);
 	r = emalloc(m);
 	tver.type = Tversion;
-	tver.tag = (ushort)~0;
+	tver.tag = 0;
 	tver.msize = m;
 	tver.version = VERSION9P;
 
 	if(do9p(&tver, &rver, t, r) != 0)
-		errx(1, "Could not establish version.");
+		errx(1, "Could not establish version");
+	free(t);
+	free(r);
 	return rver.msize;
 }
 
 FFid*
-_9pattach(int fd, uint16_t fid, uint16_t afid)
+_9pattach(int fd, uint32_t fid, uint32_t afid)
 {
-	Fcall tattach, rattach;
+	FFid		*f;
+	Fcall		tattach, rattach;
+	struct passwd	*pw;
 
+	if((pw = getpwuid(getuid())) == NULL)
+		errx(1, "Could not get user");
 	tattach.type = Tattach;
 	tattach.tag = 0;
 	tattach.fid = fid;
 	tattach.afid = afid;
+	tattach.uname = pw->pw_name;
 	tattach.msize = msize;
-	
+	if(do9p(&tattach, &rattach, tbuf, rbuf) != 0)
+		errx(1, "Could not attach");
+	f = lookup(0);
+	f->path = "/";
+	f->fid = tattach.fid;
+	f->qid = rattach.qid;
+	return f;
 }	
+
+int
+_9pwalk(char *path, FFid *f)
+{
+	Fcall	twalk, rwalk;
+	char	*cpath, *buf, *p;
+	int	nwalk, i, clunkme;
+
+	/* clunkme needs to be the old walk, but it can't
+	 * be root either
+	 */
+	clunkme = 0;
+	buf = estrdup(path);
+	cleanname(buf);
+	curpath = buf;
+	for(nwalk = 0; curpath != NULL && *curpath != '\0'; )
+		for(i = 0; i < MAXWELEM && *curpath != '\0'; ){
+			twalk.wname[i++] = curpath;
+			if((curpath = strchr(curpath, '/')) == NULL)
+				break;
+			*curpath++ = '\0';
+		}
+		twalk.type = Twalk;
+		twalk.fid = nwalk ? rootfid : rwalk.fid;
+		twalk.newfid = uniqfid();
+		twalk.nwname = i;
+		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
+			_9pclunk(clunkme);
+			free(buf);
+			return -1
+		}
+		if(rwalk.nwqid != twalk.nwname)
+			return -ENOENT;
+		f->qid = rwalk.wqid[rwalk.nwqid - 1];
+		f->fid = 

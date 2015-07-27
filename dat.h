@@ -16,5 +16,4 @@ struct FFid
 	off_t		offset;
 };
 
-FFid	fidhash[1009];
 int	srvfd;

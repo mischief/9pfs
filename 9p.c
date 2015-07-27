@@ -17,6 +17,9 @@ char	*tbuf;
 char	*rbuf;
 int	fids;
 int	msize;
+FFid	fidhash[1009];
+
+FFid	*lookup(uint32_t);
 
 void
 init9p(int m)
@@ -90,8 +93,8 @@ _9pattach(int fd, uint32_t fid, uint32_t afid)
 	return f;
 }	
 
-int
-_9pwalk(char *path, FFid *f)
+FFid*
+_9pwalk(char *path)
 {
 	Fcall	twalk, rwalk;
 	char	*cpath, *buf, *p;
@@ -110,28 +113,35 @@ _9pwalk(char *path, FFid *f)
 				break;
 			*curpath++ = '\0';
 		}
-		_9pclunk(oldfid);
-		oldfid = twalk.newfid;
+		_9pclunk(lookup(twalk.fid));
 		twalk.type = Twalk;
 		twalk.fid = nwalk ? rootfid : twalk.newfid;
 		twalk.newfid = uniqfid();
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
 			free(buf);
-			return -1
+			_9perr = -1;
+			return NULL;
 		}
-		if(rwalk.nwqid != twalk.nwname)
-			return -ENOENT;
+		if(rwalk.nwqid != twalk.nwname){
+			_9perr -ENOENT;
+			return NULL;
+		}
 	}
 	f->path = cleanname(estrdup(path));
 	f->fid = twalk.newfid;
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
-	f->offset = 0;
-	return 0;
+	return f;
 }
 
 int
 _9pclunk(uint32_t fid)
 {
 	return 0;
+}
+
+FFid*
+lookup(uint32_t fid)
+{
+	return NULL;
 }

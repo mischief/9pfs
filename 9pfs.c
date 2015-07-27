@@ -22,11 +22,10 @@ void	usage(void);
 int
 _9pgetattr(const char *path, struct stat *st)
 {
-	FFid	f;
-	int	r;
+	FFid	*f;
 
-	if((r = _9pwalk(path, &f)) != 0)
-		return r;
+	if((f = _9pwalk(path)) == NULL)
+		return _9perr;
 	return _9pstat(f, st);
 }
 

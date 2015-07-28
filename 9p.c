@@ -158,7 +158,6 @@ _9pwalk(const char *path)
 int
 _9pclunk(FFid *fid)
 {
-	
 	return 0;
 }
 

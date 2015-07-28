@@ -2,7 +2,6 @@ enum
 {
 	RERROR,
 	RMISS,
-	NHASH=1009
 };
 
 typedef struct FFid	FFid;

@@ -21,7 +21,7 @@ enum
 	PUT,
 	DEL,
 	GET,
-	HASHSIZE = 1009
+	NHASH = 1009
 };
 
 FFid		*rootfid;
@@ -29,7 +29,7 @@ char		*tbuf;
 char		*rbuf;
 int		fids;
 int		msize;
-FFid		*fidhash[HASHSIZE];
+FFid		*fidhash[NHASH];
 
 FFid		*lookup(uint32_t, int);
 uint32_t	uniqfid(void);
@@ -158,8 +158,26 @@ _9pwalk(const char *path)
 }
 
 int
-_9pstat(FFid *f, struct stat *st)
+_9pstat(FFid *f, struct stat *s)
 {
+	Dir	*d;
+	Fcall	t, r;
+	uint	n;
+
+	t.type = Tstat;
+	t.fid = f->fid;
+	t.tag = 0;
+	if(do9p(&t, &r, tbuf, rbuf) != 0)
+		return -1;
+	d = emalloc(sizeof(*d) + r.nstat);
+	if(convM2D(r.stat, r.nstat, d, (char*)(d+1) != r.nstat){
+		free(d);
+		return -1;
+	}
+	s->st_dev = d->dev;
+	s->st_ino = d->qid.path;
+	s->st_mode = d->mode;
+	s->st_nlink = d->mode & DMDIR ? r.nstat + 1 : 1; /* something like that */
 	return 0;
 }
 
@@ -187,7 +205,7 @@ lookup(uint32_t fid, int act)
 	FFid **floc, *f;
 
 	f = NULL;
-	floc = fidhash + fid % HASHSIZE;
+	floc = fidhash + fid % NHASH;
 	while(*floc != NULL){
 		if((*floc)->fid == fid)
 			break;

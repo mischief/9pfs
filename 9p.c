@@ -7,6 +7,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 #include <err.h>
 #include <errno.h>
 
@@ -31,7 +32,7 @@ int		msize;
 FFid		*fidhash[NHASH];
 
 FFid		*lookup(uint32_t, int);
-uint32_t	uniqfid(void);
+FFid		*uniqfid(void);
 
 void
 init9p(int m)
@@ -123,7 +124,6 @@ _9pwalk(const char *path)
 	char	*curpath, *buf;
 	int	nwalk, i;
 
-	
 	memset(&twalk, 0, sizeof(twalk));
 	buf = estrdup(path);
 	cleanname(buf);
@@ -135,10 +135,11 @@ _9pwalk(const char *path)
 				break;
 			*curpath++ = '\0';
 		}
-		_9pclunk(lookup(twalk.fid, DEL));
+		_9pclunk(twalk.fid);
 		twalk.type = Twalk;
 		twalk.fid = nwalk ? rootfid->fid : twalk.newfid;
-		twalk.newfid = uniqfid();
+		f = uniqfid();
+		twalk.newfid = f->fid;
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
 			free(buf);
@@ -146,11 +147,11 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 		if(rwalk.nwqid != twalk.nwname){
+			lookup(f->fid, DEL);
 			_9perrno = ENOENT;
 			return NULL;
 		}
 	}
-	f = lookup(twalk.newfid, GET);
 	f->path = cleanname(estrdup(path));
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
 	return f;
@@ -159,8 +160,10 @@ _9pwalk(const char *path)
 int
 _9pstat(FFid *f, struct stat *s)
 {
-	Dir	*d;
-	Fcall	t, r;
+	Dir		*d;
+	struct passwd	*p;
+	struct group	*g;
+	Fcall		t, r;
 
 	t.type = Tstat;
 	t.fid = f->fid;
@@ -176,24 +179,33 @@ _9pstat(FFid *f, struct stat *s)
 	s->st_ino = d->qid.path;
 	s->st_mode = d->mode;
 	s->st_nlink = d->mode & DMDIR ? r.nstat + 1 : 1;
+	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
+	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
+	s->st_size = d->length;
+	s->st_atime = d->atime;
+	s->st_mtime = s->st_ctime = d->mtime;
+	/* what about the strings? */
+	free(d);
 	return 0;
 }
 
 int
-_9pclunk(FFid *f)
+_9pclunk(uint32_t fid)
 {
+	lookup(fid, DEL);
 	return 0;
 }
 
-uint32_t
+FFid*
 uniqfid(void)
 {
+	FFid		*f;
 	uint32_t	fid;
 
 	do
 		fid = random();
-	while(lookup(fid, PUT) == NULL);
-	return fid;
+	while((f = lookup(fid, PUT)) == NULL);
+	return f;
 }
 	
 
@@ -215,8 +227,11 @@ lookup(uint32_t fid, int act)
 		if(*floc == NULL)
 			break;
 		f = *floc;
-		if(act == DEL && fid != 0)
+		if(act == DEL && fid != 0){
 			*floc = (*floc)->link;
+			free(f);
+			f = NULL;
+		}
 		break;
 	case PUT:
 		if(*floc != NULL)

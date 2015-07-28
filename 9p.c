@@ -1,10 +1,13 @@
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <err.h>
+#include <errno.h>
 
 #include "libc.h"
 #include "dat.h"
@@ -12,18 +15,36 @@
 #include "9p.h"
 #include "util.h"
 
+enum
+{
+	PUT,
+	DEL,
+	GET,
+	HASHSIZE = 1009
+};
+
 FFid	*rootfid;
 char	*tbuf;
 char	*rbuf;
 int	fids;
 int	msize;
-FFid	fidhash[1009];
+FFid	*fidhash[HASHSIZE];
 
 FFid	*lookup(uint32_t);
 
 void
 init9p(int m)
 {
+	unsigned int	seed;
+	int		rfd;
+
+	if((rfd = open("/dev/random", O_RDONLY) == -1)
+		err(1, "Could not open /dev/random");
+	if(read(rfd, &seed, sizeof(seed)) != sizeof(seed))
+		err(1, "Bad /dev/random read");
+	close(rfd);
+	srand48(seed);
+
 	if((msize = _9pversion(srvfd, m) <= 0))
 		errx(1, "Bad msize");
 	tbuf = emalloc(msize);
@@ -94,7 +115,7 @@ _9pattach(int fd, uint32_t fid, uint32_t afid)
 }	
 
 FFid*
-_9pwalk(char *path)
+_9pwalk(const char *path)
 {
 	Fcall	twalk, rwalk;
 	char	*cpath, *buf, *p;
@@ -113,18 +134,18 @@ _9pwalk(char *path)
 				break;
 			*curpath++ = '\0';
 		}
-		_9pclunk(lookup(twalk.fid));
+		_9pclunk(lookup(twalk.fid, DEL));
 		twalk.type = Twalk;
 		twalk.fid = nwalk ? rootfid : twalk.newfid;
 		twalk.newfid = uniqfid();
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
 			free(buf);
-			_9perr = -1;
+			_9perrno = -1;
 			return NULL;
 		}
 		if(rwalk.nwqid != twalk.nwname){
-			_9perr -ENOENT;
+			_9perrno = ENOENT;
 			return NULL;
 		}
 	}
@@ -135,13 +156,39 @@ _9pwalk(char *path)
 }
 
 int
-_9pclunk(uint32_t fid)
+_9pclunk(FFid *fid)
 {
+	
 	return 0;
 }
 
 FFid*
-lookup(uint32_t fid)
+lookup(uint32_t fid, int act)
 {
-	return NULL;
+	FFid **floc, *f;
+
+	floc = fidhash + fid % HASHSIZE;
+	while(*floc != NULL){
+		if((*floc)->fid == fid)
+			break;
+		floc = &(*floc)->link;
+	}
+	switch(act){
+	case DEL:
+	case GET:
+		if(*floc == NULL)
+			return NULL;
+		f = *floc
+		if(act == DEL)
+			*floc = (*floc)->link;
+		break;
+	case PUT:
+		if(*floc != NULL)
+			return NULL;
+		f = emalloc(sizeof(*f));
+		f.fid = fid;
+		*floc = f;
+		break;
+	}
+	return f;			
 }

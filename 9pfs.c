@@ -25,11 +25,12 @@ _9pgetattr(const char *path, struct stat *st)
 	FFid	*f;
 
 	if((f = _9pwalk(path)) == NULL)
-		return _9perr;
+		return -_9perrno;
 	return _9pstat(f, st);
 }
 
 struct fuse_operations fsops = {
+	.getattr =	_9pgetattr
 };
 
 int

@@ -45,7 +45,7 @@ init9p(int m)
 	if(read(rfd, &seed, sizeof(seed)) != sizeof(seed))
 		err(1, "Bad /dev/random read");
 	close(rfd);
-	srand48(seed);
+	srandom(seed);
 
 	if((msize = _9pversion(srvfd, m) <= 0))
 		errx(1, "Bad msize");
@@ -177,7 +177,7 @@ _9pstat(FFid *f, struct stat *s)
 	s->st_dev = d->dev;
 	s->st_ino = d->qid.path;
 	s->st_mode = d->mode;
-	s->st_nlink = d->mode & DMDIR ? r.nstat + 1 : 1; /* something like that */
+	s->st_nlink = d->mode & DMDIR ? r.nstat + 1 : 1;
 	return 0;
 }
 
@@ -193,7 +193,7 @@ uniqfid(void)
 	uint32_t	fid;
 
 	do
-		fid = drand48() * UINT32_MAX;
+		fid = random();
 	while(lookup(fid, PUT) == NULL);
 	return fid;
 }

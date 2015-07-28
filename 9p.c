@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <string.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <err.h>
@@ -23,14 +24,15 @@ enum
 	HASHSIZE = 1009
 };
 
-FFid	*rootfid;
-char	*tbuf;
-char	*rbuf;
-int	fids;
-int	msize;
-FFid	*fidhash[HASHSIZE];
+FFid		*rootfid;
+char		*tbuf;
+char		*rbuf;
+int		fids;
+int		msize;
+FFid		*fidhash[HASHSIZE];
 
-FFid	*lookup(uint32_t);
+FFid		*lookup(uint32_t, int);
+uint32_t	uniqfid(void);
 
 void
 init9p(int m)
@@ -38,7 +40,7 @@ init9p(int m)
 	unsigned int	seed;
 	int		rfd;
 
-	if((rfd = open("/dev/random", O_RDONLY) == -1)
+	if((rfd = open("/dev/random", O_RDONLY)) == -1)
 		err(1, "Could not open /dev/random");
 	if(read(rfd, &seed, sizeof(seed)) != sizeof(seed))
 		err(1, "Bad /dev/random read");
@@ -107,7 +109,7 @@ _9pattach(int fd, uint32_t fid, uint32_t afid)
 	tattach.msize = msize;
 	if(do9p(&tattach, &rattach, tbuf, rbuf) != 0)
 		errx(1, "Could not attach");
-	f = lookup(0);
+	f = lookup(0, PUT);
 	f->path = "/";
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
@@ -117,13 +119,13 @@ _9pattach(int fd, uint32_t fid, uint32_t afid)
 FFid*
 _9pwalk(const char *path)
 {
+	FFid	*f;
 	Fcall	twalk, rwalk;
-	char	*cpath, *buf, *p;
-	uin32_t	oldfid;
+	char	*curpath, *buf;
 	int	nwalk, i;
 
-	memset(twalk, 0, sizeof(twalk));
-	clunkme = 0;
+	
+	memset(&twalk, 0, sizeof(twalk));
 	buf = estrdup(path);
 	cleanname(buf);
 	curpath = buf;
@@ -136,7 +138,7 @@ _9pwalk(const char *path)
 		}
 		_9pclunk(lookup(twalk.fid, DEL));
 		twalk.type = Twalk;
-		twalk.fid = nwalk ? rootfid : twalk.newfid;
+		twalk.fid = nwalk ? rootfid->fid : twalk.newfid;
 		twalk.newfid = uniqfid();
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
@@ -149,23 +151,42 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 	}
+	f = lookup(twalk.newfid, GET);
 	f->path = cleanname(estrdup(path));
-	f->fid = twalk.newfid;
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
 	return f;
 }
 
 int
-_9pclunk(FFid *fid)
+_9pstat(FFid *f, struct stat *st)
 {
 	return 0;
 }
+
+int
+_9pclunk(FFid *f)
+{
+	return 0;
+}
+
+uint32_t
+uniqfid(void)
+{
+	uint32_t	fid;
+
+	do
+		fid = drand48() * UINT32_MAX;
+	while(lookup(fid, PUT) == NULL);
+	return fid;
+}
+	
 
 FFid*
 lookup(uint32_t fid, int act)
 {
 	FFid **floc, *f;
 
+	f = NULL;
 	floc = fidhash + fid % HASHSIZE;
 	while(*floc != NULL){
 		if((*floc)->fid == fid)
@@ -176,16 +197,16 @@ lookup(uint32_t fid, int act)
 	case DEL:
 	case GET:
 		if(*floc == NULL)
-			return NULL;
-		f = *floc
-		if(act == DEL)
+			break;
+		f = *floc;
+		if(act == DEL && fid != 0)
 			*floc = (*floc)->link;
 		break;
 	case PUT:
 		if(*floc != NULL)
-			return NULL;
+			break;
 		f = emalloc(sizeof(*f));
-		f.fid = fid;
+		f->fid = fid;
 		*floc = f;
 		break;
 	}

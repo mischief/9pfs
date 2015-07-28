@@ -8,7 +8,8 @@ OBJS=	9pfs.o\
 		lib/convM2S.o\
 		lib/convS2M.o\
 		lib/read9pmsg.o\
-		lib/readn.o
+		lib/readn.o\
+		lib/cleanname.o
 CC=	cc
 DEBUG=	-g
 CFLAGS=	-O2 -pipe\

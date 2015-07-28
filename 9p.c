@@ -25,8 +25,7 @@ enum
 };
 
 FFid		*rootfid;
-char		*tbuf;
-char		*rbuf;
+void		*tbuf, *rbuf;
 int		fids;
 int		msize;
 FFid		*fidhash[NHASH];
@@ -56,7 +55,7 @@ init9p(int m)
 }
 
 int
-do9p(Fcall *t, Fcall *r, char *tb, char *rb)
+do9p(Fcall *t, Fcall *r, uchar *tb, uchar *rb)
 {
 	int	n;
 
@@ -76,7 +75,7 @@ int
 _9pversion(int fd, uint32_t m)
 {
 	Fcall	tver, rver;
-	char	*t, *r;
+	void	*t, *r;
 
 	t = emalloc(m);
 	r = emalloc(m);
@@ -162,7 +161,6 @@ _9pstat(FFid *f, struct stat *s)
 {
 	Dir	*d;
 	Fcall	t, r;
-	uint	n;
 
 	t.type = Tstat;
 	t.fid = f->fid;
@@ -170,7 +168,7 @@ _9pstat(FFid *f, struct stat *s)
 	if(do9p(&t, &r, tbuf, rbuf) != 0)
 		return -1;
 	d = emalloc(sizeof(*d) + r.nstat);
-	if(convM2D(r.stat, r.nstat, d, (char*)(d+1) != r.nstat){
+	if(convM2D(r.stat, r.nstat, d, (char*)(d+1)) != r.nstat){
 		free(d);
 		return -1;
 	}

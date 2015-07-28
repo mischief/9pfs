@@ -1,9 +1,9 @@
 #include <sys/types.h>
-#include <sys/stdint.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <fuse.h>

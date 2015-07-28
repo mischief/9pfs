@@ -1,6 +1,6 @@
 #include <sys/types.h>
-#include <sys/stdint.h>
 
+#include <stdint.h>
 #include <unistd.h>
 
 #include "../libc.h"

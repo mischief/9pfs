@@ -223,3 +223,4 @@ indexed by fid, the other by path.
 
 For opendir, the only checking I need to do is check the type
 against QTDIR.
+this is FFid *fid; fid->qid.type&QTDIR

@@ -12,10 +12,8 @@
 #include <errno.h>
 
 #include "libc.h"
-#include "dat.h"
 #include "fcall.h"
-#include "9p.h"
-#include "util.h"
+#include "9pfs.h"
 
 enum
 {
@@ -30,9 +28,11 @@ void		*tbuf, *rbuf;
 int		fids;
 int		msize;
 FFid		*fidhash[NHASH];
+PFid		*pathhash[NHASH];
 
-FFid		*lookup(uint32_t, int);
-FFid		*uniqfid(void);
+FFid		**lookup(uint32_t, int);
+FFid		**uniqfid(void);
+int		hash(const char*);
 
 void
 init9p(int m)
@@ -47,11 +47,11 @@ init9p(int m)
 	close(rfd);
 	srandom(seed);
 
-	if((msize = _9pversion(srvfd, m) <= 0))
+	if((msize = _9pversion(m) <= 0))
 		errx(1, "Bad msize");
 	tbuf = emalloc(msize);
 	rbuf = emalloc(msize);
-	if((rootfid = _9pattach(srvfd, 0, NOFID)) == NULL)
+	if((rootfid = _9pattach(0, NOFID)) == NULL)
 		errx(1, "Could not attach");
 }
 
@@ -73,7 +73,7 @@ do9p(Fcall *t, Fcall *r, uchar *tb, uchar *rb)
 }
 	
 int
-_9pversion(int fd, uint32_t m)
+_9pversion(uint32_t m)
 {
 	Fcall	tver, rver;
 	void	*t, *r;
@@ -93,9 +93,9 @@ _9pversion(int fd, uint32_t m)
 }
 
 FFid*
-_9pattach(int fd, uint32_t fid, uint32_t afid)
+_9pattach(uint32_t fid, uint32_t afid)
 {
-	FFid		*f;
+	FFid		**f;
 	Fcall		tattach, rattach;
 	struct passwd	*pw;
 
@@ -111,15 +111,15 @@ _9pattach(int fd, uint32_t fid, uint32_t afid)
 		errx(1, "Could not attach");
 	f = lookup(0, PUT);
 	addfid("/", f);
-	f->fid = tattach.fid;
-	f->qid = rattach.qid;
-	return f;
+	(*f)->fid = tattach.fid;
+	(*f)->qid = rattach.qid;
+	return *f;
 }	
 
-FFid*
+FFid**
 _9pwalk(const char *path)
 {
-	FFid	*f;
+	FFid	**f;
 	Fcall	twalk, rwalk;
 	char	*curpath, *buf;
 	int	nwalk, i;
@@ -140,7 +140,7 @@ _9pwalk(const char *path)
 		twalk.type = Twalk;
 		twalk.fid = nwalk ? rootfid->fid : twalk.newfid;
 		f = uniqfid();
-		twalk.newfid = f->fid;
+		twalk.newfid = (*f)->fid;
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
 			free(buf);
@@ -148,13 +148,13 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 		if(rwalk.nwqid != twalk.nwname){
-			lookup(f->fid, DEL);
+			lookup((*f)->fid, DEL);
 			_9perrno = ENOENT;
 			return NULL;
 		}
 	}
 	addfid(path, f);
-	f->qid = rwalk.wqid[rwalk.nwqid - 1];
+	(*f)->qid = rwalk.wqid[rwalk.nwqid - 1];
 	return f;
 }
 
@@ -209,10 +209,10 @@ _9pclunk(uint32_t fid)
 	return 0;
 }
 
-FFid*
+FFid**
 uniqfid(void)
 {
-	FFid		*f;
+	FFid		**f;
 	uint32_t	fid;
 
 	do
@@ -222,12 +222,11 @@ uniqfid(void)
 }
 	
 
-FFid*
+FFid**
 lookup(uint32_t fid, int act)
 {
 	FFid **floc, *f;
 
-	f = NULL;
 	floc = fidhash + fid % NHASH;
 	while(*floc != NULL){
 		if((*floc)->fid == fid)
@@ -236,23 +235,33 @@ lookup(uint32_t fid, int act)
 	}
 	switch(act){
 	case DEL:
-	case GET:
-		if(*floc == NULL)
-			break;
-		f = *floc;
-		if(act == DEL && fid != 0){
+		if(fid != 0){
+			f = *floc;
 			*floc = (*floc)->link;
 			free(f);
-			f = NULL;
 		}
+		break;
+	case GET:
+		if(*floc == NULL)
+			return NULL;
 		break;
 	case PUT:
 		if(*floc != NULL)
-			break;
+			return NULL;
 		f = emalloc(sizeof(*f));
 		f->fid = fid;
 		*floc = f;
 		break;
 	}
-	return f;			
+	return floc;			
+}
+
+int
+addfid(const char *path, FFid **f)
+{
+	PFid	*p;
+
+	p = emalloc(sizeof(*p));
+	p->ffid = f;
+	return 0;
 }

@@ -11,20 +11,18 @@
 #include <err.h>
 
 #include "libc.h"
-#include "dat.h"
 #include "fcall.h"
-#include "9p.h"
-#include "util.h"
+#include "9pfs.h"
 
 void	usage(void);
 
 int
-_9pgetattr(const char *path, struct stat *st)
+fsgetattr(const char *path, struct stat *st)
 {
 	FFid	*f;
 	int	r;
 
-	if((f = _9pwalk(path)) == NULL)
+	if((f = *_9pwalk(path)) == NULL)
 		return -_9perrno;
 	r = _9pstat(f, st);
 	_9pclunk(f->fid);
@@ -32,25 +30,29 @@ _9pgetattr(const char *path, struct stat *st)
 }
 
 int
-_9popendir(const char *path, struct fuse_file_info *ffi)
+fsopendir(const char *path, struct fuse_file_info *ffi)
 {
-	FFid		*f;
+	FFid		**f;
 	int		mode;
 
 	mode = ffi->flags & 3;
 	if((f = hasfid(path)) == NULL)
 		f = _9pwalk(path);
 	else{
-		f = fidclone(f);
+		f = fidclone(*f);
 	}
 	if(f == NULL)
 		return -_9perrno;
 	addfid(path, f);
+	if(_9popen(*f, 1) == -1)
+		return -_9perrno;
+	ffi->fh = (*f)->fid;
 	return 0;
 }
 
 struct fuse_operations fsops = {
-	.getattr =	_9pgetattr
+	.getattr =	fsgetattr,
+	.opendir = 	fsopendir
 };
 
 int

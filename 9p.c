@@ -30,9 +30,9 @@ int		msize;
 FFid		*fidhash[NHASH];
 PFid		*pathhash[NHASH];
 
-FFid		**lookup(uint32_t, int);
-FFid		**uniqfid(void);
-int		hash(const char*);
+FFid		*lookup(uint32_t, int);
+FFid		*uniqfid(void);
+int		hashstr(const char*);
 
 void
 init9p(int m)
@@ -95,7 +95,7 @@ _9pversion(uint32_t m)
 FFid*
 _9pattach(uint32_t fid, uint32_t afid)
 {
-	FFid		**f;
+	FFid		*f;
 	Fcall		tattach, rattach;
 	struct passwd	*pw;
 
@@ -110,16 +110,17 @@ _9pattach(uint32_t fid, uint32_t afid)
 	if(do9p(&tattach, &rattach, tbuf, rbuf) != 0)
 		errx(1, "Could not attach");
 	f = lookup(0, PUT);
-	addfid("/", f);
-	(*f)->fid = tattach.fid;
-	(*f)->qid = rattach.qid;
-	return *f;
+	if(addfid("/", f) == -1)
+		errx(1, "Reused fid");
+	f->fid = tattach.fid;
+	f->qid = rattach.qid;
+	return f;
 }	
 
-FFid**
+FFid*
 _9pwalk(const char *path)
 {
-	FFid	**f;
+	FFid	*f;
 	Fcall	twalk, rwalk;
 	char	*curpath, *buf;
 	int	nwalk, i;
@@ -140,7 +141,7 @@ _9pwalk(const char *path)
 		twalk.type = Twalk;
 		twalk.fid = nwalk ? rootfid->fid : twalk.newfid;
 		f = uniqfid();
-		twalk.newfid = (*f)->fid;
+		twalk.newfid = f->fid;
 		twalk.nwname = i;
 		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
 			free(buf);
@@ -148,13 +149,14 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 		if(rwalk.nwqid != twalk.nwname){
-			lookup((*f)->fid, DEL);
+			lookup(f->fid, DEL);
 			_9perrno = ENOENT;
 			return NULL;
 		}
 	}
-	addfid(path, f);
-	(*f)->qid = rwalk.wqid[rwalk.nwqid - 1];
+	if(addfid(path, f) == -1)
+		errx(1, "Reused fid");
+	f->qid = rwalk.wqid[rwalk.nwqid - 1];
 	return f;
 }
 
@@ -209,10 +211,10 @@ _9pclunk(uint32_t fid)
 	return 0;
 }
 
-FFid**
+FFid*
 uniqfid(void)
 {
-	FFid		**f;
+	FFid		*f;
 	uint32_t	fid;
 
 	do
@@ -222,10 +224,11 @@ uniqfid(void)
 }
 	
 
-FFid**
+FFid*
 lookup(uint32_t fid, int act)
 {
-	FFid **floc, *f;
+	FFid	**floc, *f;
+	PFid	*p;
 
 	floc = fidhash + fid % NHASH;
 	while(*floc != NULL){
@@ -234,16 +237,21 @@ lookup(uint32_t fid, int act)
 		floc = &(*floc)->link;
 	}
 	switch(act){
+	case GET:
+		if(*floc == NULL)
+			return NULL;
+		break;
 	case DEL:
 		if(fid != 0){
 			f = *floc;
 			*floc = (*floc)->link;
+			if(f->pfid != NULL && *f->pfid != NULL){
+				p = *f->pfid;
+				*f->pfid = p->link;
+				free(p);
+			}
 			free(f);
 		}
-		break;
-	case GET:
-		if(*floc == NULL)
-			return NULL;
 		break;
 	case PUT:
 		if(*floc != NULL)
@@ -253,15 +261,34 @@ lookup(uint32_t fid, int act)
 		*floc = f;
 		break;
 	}
-	return floc;			
+	return *floc;			
 }
 
 int
-addfid(const char *path, FFid **f)
+str2int(const char *s)
 {
-	PFid	*p;
+	return 0;
+}
+
+int
+addfid(const char *path, FFid *f)
+{
+	PFid	**ploc, *p;
+	char	*s;
+	int	h;
 
 	p = emalloc(sizeof(*p));
 	p->ffid = f;
+	s = cleanname(estrdup(path));
+	p->path = s;
+	h = str2int(s);
+	ploc = pathhash + h % NHASH;
+	while(*ploc != NULL){
+		if((*ploc)->ffid->fid == f->fid)
+			return -1;
+		ploc = &(*ploc)->link;
+	}
+	*ploc = p;
+	f->pfid = ploc;
 	return 0;
 }

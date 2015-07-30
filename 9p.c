@@ -292,3 +292,22 @@ addfid(const char *path, FFid *f)
 	f->pfid = ploc;
 	return 0;
 }
+
+FFid*
+hasfid(const char *path)
+{
+	PFid	*p;
+	char	*s;
+	int	h;
+
+	s = cleanname(estrdup(path));
+	h = str2int(s);
+	for(p = *(pathhash + h % NHASH); p != NULL; p = p->link){
+		if(strcmp(s, p->path) == 0)
+			break;
+	}
+	free(s);
+	if(p == NULL)
+		return NULL;
+	return p->ffid;
+}

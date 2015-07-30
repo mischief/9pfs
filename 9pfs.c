@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <fuse.h>
 #include <string.h>
-#include <errno.h>
 #include <err.h>
 
 #include "libc.h"
@@ -30,6 +29,24 @@ _9pgetattr(const char *path, struct stat *st)
 	r = _9pstat(f, st);
 	_9pclunk(f->fid);
 	return r;
+}
+
+int
+_9popendir(const char *path, struct fuse_file_info *ffi)
+{
+	FFid		*f;
+	int		mode;
+
+	mode = ffi->flags & 3;
+	if((f = hasfid(path)) == NULL)
+		f = _9pwalk(path);
+	else{
+		f = fidclone(f);
+	}
+	if(f == NULL)
+		return -_9perrno;
+	addfid(path, f);
+	return 0;
 }
 
 struct fuse_operations fsops = {

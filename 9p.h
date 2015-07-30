@@ -6,3 +6,7 @@ FFid	*_9pwalk(const char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(uint32_t);
 void	init9p(int);
+
+FFid	*hasfid(const char*);
+int	addfid(const char*, FFid*);
+FFid	*fidclone(FFid*);

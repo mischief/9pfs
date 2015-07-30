@@ -209,3 +209,17 @@ newfid is uniqfid3
 
 
 just make _9pclunk not clunk the root fid.
+
+
+rsc keeps this linked list of fids available.
+When he gets rid of it one, it goes on a free
+list.
+
+the lookupfusefid method can potentially grab from
+the end. Is that what happens when it is a new nodeid?
+
+so pathlookup. We need to store a FFid in two hashes now. One
+indexed by fid, the other by path.
+
+For opendir, the only checking I need to do is check the type
+against QTDIR.

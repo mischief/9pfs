@@ -110,7 +110,7 @@ _9pattach(int fd, uint32_t fid, uint32_t afid)
 	if(do9p(&tattach, &rattach, tbuf, rbuf) != 0)
 		errx(1, "Could not attach");
 	f = lookup(0, PUT);
-	f->path = "/";
+	addfid("/", f);
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
 	return f;
@@ -124,6 +124,7 @@ _9pwalk(const char *path)
 	char	*curpath, *buf;
 	int	nwalk, i;
 
+	f = NULL;
 	memset(&twalk, 0, sizeof(twalk));
 	buf = estrdup(path);
 	cleanname(buf);
@@ -152,7 +153,7 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 	}
-	f->path = cleanname(estrdup(path));
+	addfid(path, f);
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
 	return f;
 }
@@ -198,7 +199,13 @@ _9pstat(FFid *f, struct stat *s)
 int
 _9pclunk(uint32_t fid)
 {
+	Fcall	t, r;
+
 	lookup(fid, DEL);
+	t.type = Tclunk;
+	t.fid = fid;
+	t.tag = 0;
+	do9p(&t, &r, tbuf, rbuf);
 	return 0;
 }
 

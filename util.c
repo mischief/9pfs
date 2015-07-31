@@ -25,6 +25,26 @@ erealloc(void *p, size_t size)
 	return v;
 }
 
+void*
+ecalloc(size_t nmemb, size_t size)
+{
+	void 	*v;
+
+	if((v = calloc(nmemb, size)) == NULL)
+		err(1, "ecalloc: out of memory");
+	return v;
+}
+
+void*
+ereallocarray(void *ptr, size_t nmemb, size_t size)
+{
+	void	*v;
+
+	if((v = reallocarray(ptr, nmemb, size)) == NULL)
+		err(1, "ereallocarray: out of memory");
+	return v;
+}
+
 char*
 estrdup(const char *s)
 {

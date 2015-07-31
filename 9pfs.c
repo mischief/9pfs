@@ -32,14 +32,14 @@ fsgetattr(const char *path, struct stat *st)
 int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
-	FFid		*f;
+	FFid		**ff, *f;
 	int		mode;
 
 	mode = ffi->flags & 3;
-	if((f = hasfid(path)) == NULL)
+	if((ff = hasfid(path)) == NULL)
 		f = _9pwalk(path);
 	else{
-		f = fidclone(f);
+		f = fidclone(*ff);
 	}
 	if(f == NULL)
 		return -_9perrno;

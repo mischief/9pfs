@@ -276,23 +276,41 @@ addfid(const char *path, FFid *f)
 {
 	PFid	**ploc, *p;
 	char	*s;
-	int	h;
+	int	h, i;
 
 	s = cleanname(estrdup(path));
 	h = str2int(s);
 	for(ploc = pathhash + h % NHASH; *ploc != NULL; ploc = &(*ploc)->link){
-		if((*ploc)->ffid->fid == f->fid)
-			return -1;
+		if(strcmp(s, (*ploc)->path) == 0)
+			break;
 	}
-	p = emalloc(sizeof(*p));
-	p->ffid = f;
-	p->path = s;
-	*ploc = p;
+	if(*ploc == NULL){
+		p = emalloc(sizeof(*p));
+		p->path = s;
+		p->ffids = ecalloc(sizeof(*p->ffids), 3);
+		*p->ffids = f;
+		p->nfid = 1;
+		p->nfidfree = 2;
+		*ploc = p;
+	}else{
+		free(s);
+		p = *ploc;
+		for(i = 0; i < p->nfid; i++){
+			if(p->ffids[i]->fid == f->fid)
+				return -1;
+		}
+		if(p->nfidfree == 0){
+			p->ffids = ereallocarray(p->ffids, sizeof(*p->ffids), p->nfid + 3);
+			p->nfidfree = 3;
+		}
+		p->ffids[p->nfid++] = f;
+		p->nfidfree--;
+	}
 	f->pfid = ploc;
 	return 0;
 }
 
-FFid*
+FFid**
 hasfid(const char *path)
 {
 	PFid	*p;
@@ -306,7 +324,27 @@ hasfid(const char *path)
 			break;
 	}
 	free(s);
-	if(p == NULL)
+	if(p == NULL || p->nfid == 0)
 		return NULL;
-	return p->ffid;
+	return p->ffids;
 }
+
+/* WIP
+FFid*
+fidclone(FFid *f)
+{
+	Fcall	twalk, rwalk;
+	FFid	newf;
+
+	memset(&twalk, 0 sizeof(twalk));
+	twalk.type = Twalk;
+	twalk.fid = f->fid;
+	newf = uniqfid();
+	twalk.newfid = f->fid;
+	twalk.nwname = 0;
+	if(do9p(&twalk, &rwalk) != 0);
+		return -1;
+	if(f->pfid != NULL && *f->pfid != NULL)
+		f->
+	
+*/

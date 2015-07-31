@@ -21,7 +21,9 @@ struct PFid
 {
 	PFid	*link;
 	char	*path;
-	FFid	*ffid;
+	int	nfid;
+	int	nfidfree;
+	FFid	**ffids;
 };
 
 int	srvfd;
@@ -36,10 +38,12 @@ int	_9popen(FFid*, int);
 
 void	init9p(int);
 
-FFid	*hasfid(const char*);
+FFid	**hasfid(const char*);
 int	addfid(const char*, FFid*);
 FFid	*fidclone(FFid*);
 
 void	*emalloc(size_t);
 void	*erealloc(void*, size_t);
+void	*ereallocarray(void*, size_t, size_t);
+void	*ecalloc(size_t, size_t);
 char	*estrdup(const char *);

@@ -230,11 +230,10 @@ lookup(uint32_t fid, int act)
 	FFid	**floc, *f;
 	PFid	*p;
 
-	floc = fidhash + fid % NHASH;
-	while(*floc != NULL){
+	
+	for(floc = fidhash + fid % NHASH; *floc != NULL; floc = &(*floc)->link){
 		if((*floc)->fid == fid)
 			break;
-		floc = &(*floc)->link;
 	}
 	switch(act){
 	case GET:
@@ -282,11 +281,9 @@ addfid(const char *path, FFid *f)
 	s = cleanname(estrdup(path));
 	p->path = s;
 	h = str2int(s);
-	ploc = pathhash + h % NHASH;
-	while(*ploc != NULL){
+	for(ploc = pathhash + h % NHASH; *ploc != NULL; ploc = &(*ploc)->link){
 		if((*ploc)->ffid->fid == f->fid)
 			return -1;
-		ploc = &(*ploc)->link;
 	}
 	*ploc = p;
 	f->pfid = ploc;
@@ -302,7 +299,7 @@ hasfid(const char *path)
 
 	s = cleanname(estrdup(path));
 	h = str2int(s);
-	for(p = *(pathhash + h % NHASH); p != NULL; p = p->link){
+	for(p = pathhash[h % NHASH]; p != NULL; p = p->link){
 		if(strcmp(s, p->path) == 0)
 			break;
 	}

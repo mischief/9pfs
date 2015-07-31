@@ -241,6 +241,8 @@ lookup(uint32_t fid, int act)
 			return NULL;
 		break;
 	case DEL:
+		if(*floc == NULL)
+			return NULL;
 		if(fid != 0){
 			f = *floc;
 			*floc = (*floc)->link;

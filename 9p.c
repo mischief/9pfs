@@ -281,7 +281,7 @@ addfid(const char *path, FFid *f)
 	s = cleanname(estrdup(path));
 	h = str2int(s);
 	for(ploc = pathhash + h % NHASH; *ploc != NULL; ploc = &(*ploc)->link){
-		if((*ploc)->ffid->fid == f->fid){
+		if((*ploc)->ffid->fid == f->fid)
 			return -1;
 	}
 	p = emalloc(sizeof(*p));

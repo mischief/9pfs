@@ -154,8 +154,7 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 	}
-	if(addfid(path, f) == -1)
-		errx(1, "Reused fid");
+	addfid(path, f);
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
 	return f;
 }
@@ -228,8 +227,6 @@ FFid*
 lookup(uint32_t fid, int act)
 {
 	FFid	**floc, *f;
-	PFid	*p;
-
 	
 	for(floc = fidhash + fid % NHASH; *floc != NULL; floc = &(*floc)->link){
 		if((*floc)->fid == fid)
@@ -246,10 +243,9 @@ lookup(uint32_t fid, int act)
 		if(fid != 0){
 			f = *floc;
 			*floc = (*floc)->link;
-			if(f->pfid != NULL && *f->pfid != NULL){
-				p = *f->pfid;
-				*f->pfid = p->link;
-				free(p);
+			if(f->paddr != NULL){
+				*f->paddr = NULL;
+				*f->npath--;
 			}
 			free(f);
 		}
@@ -275,8 +271,9 @@ int
 addfid(const char *path, FFid *f)
 {
 	PFid	**ploc, *p;
+	FFid	**fp;
 	char	*s;
-	int	h, i;
+	int	h;
 
 	s = cleanname(estrdup(path));
 	h = str2int(s);
@@ -288,31 +285,35 @@ addfid(const char *path, FFid *f)
 		p = emalloc(sizeof(*p));
 		p->path = s;
 		p->ffids = ecalloc(sizeof(*p->ffids), 3);
+		p->maxfid = 3;
 		*p->ffids = f;
 		p->nfid = 1;
-		p->nfidfree = 2;
 		*ploc = p;
+		f->paddr = p->ffids;
+		f->npath = &p->nfid;
 	}else{
 		free(s);
 		p = *ploc;
-		for(i = 0; i < p->nfid; i++){
-			if(p->ffids[i]->fid == f->fid)
-				return -1;
+		if(p->nfid == p->maxfid){
+			p->maxfid += 3;
+			p->ffids = ereallocarray(p->ffids, sizeof(*p->ffids), p->maxfid);
 		}
-		if(p->nfidfree == 0){
-			p->ffids = ereallocarray(p->ffids, sizeof(*p->ffids), p->nfid + 3);
-			p->nfidfree = 3;
+		for(fp = p->ffids; fp < p->ffids + p->maxfid; fp++){
+			if(*fp == NULL)
+				break;
 		}
-		p->ffids[p->nfid++] = f;
-		p->nfidfree--;
+		*fp = f;
+		p->nfid++;
+		f->paddr = fp;
+		f->npath = &p->nfid;
 	}
-	f->pfid = ploc;
 	return 0;
 }
 
-FFid**
+FFid*
 hasfid(const char *path)
 {
+	FFid	**fp;
 	PFid	*p;
 	char	*s;
 	int	h;
@@ -326,7 +327,9 @@ hasfid(const char *path)
 	free(s);
 	if(p == NULL || p->nfid == 0)
 		return NULL;
-	return p->ffids;
+	for(fp = p->ffids; *fp != NULL; fp++)
+		;
+	return *fp;
 }
 
 /* WIP

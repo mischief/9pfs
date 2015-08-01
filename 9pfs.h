@@ -14,7 +14,8 @@ struct FFid
 	uint32_t	fid;
 	Qid		qid;
 	off_t		offset;
-	PFid		**pfid;
+	FFid		**paddr;
+	int		*npath;
 };
 
 struct PFid
@@ -22,7 +23,7 @@ struct PFid
 	PFid	*link;
 	char	*path;
 	int	nfid;
-	int	nfidfree;
+	int	maxfid;
 	FFid	**ffids;
 };
 
@@ -38,7 +39,7 @@ int	_9popen(FFid*, int);
 
 void	init9p(int);
 
-FFid	**hasfid(const char*);
+FFid	*hasfid(const char*);
 int	addfid(const char*, FFid*);
 FFid	*fidclone(FFid*);
 

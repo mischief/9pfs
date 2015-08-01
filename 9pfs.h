@@ -14,17 +14,14 @@ struct FFid
 	uint32_t	fid;
 	Qid		qid;
 	off_t		offset;
-	FFid		**paddr;
-	int		*npath;
+	PFid		*pfid;
 };
 
 struct PFid
 {
 	PFid	*link;
 	char	*path;
-	int	nfid;
-	int	maxfid;
-	FFid	**ffids;
+	FFid	*ffid;
 };
 
 int	srvfd;

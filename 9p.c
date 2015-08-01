@@ -66,9 +66,11 @@ do9p(Fcall *t, Fcall *r, uchar *tb, uchar *rb)
 		errx(1, "Bad 9p read.");
 	convM2S(rb, n, r);
 	if(r->type == Rerror)
-		return RERROR;
-	if(r->type != t->type+1)
-		return RMISS;
+		return -1;
+	if(r->type != t->type+1){
+		_9perrno = ENOENT;
+		return -1;
+	}
 	return 0;
 }
 	
@@ -243,9 +245,8 @@ lookup(uint32_t fid, int act)
 		if(fid != 0){
 			f = *floc;
 			*floc = (*floc)->link;
-			if(f->paddr != NULL){
-				*f->paddr = NULL;
-				*f->npath--;
+			if(f->pfid != NULL){
+				f->pfid->ffid = NULL;
 			}
 			free(f);
 		}
@@ -271,7 +272,6 @@ int
 addfid(const char *path, FFid *f)
 {
 	PFid	**ploc, *p;
-	FFid	**fp;
 	char	*s;
 	int	h;
 
@@ -283,37 +283,21 @@ addfid(const char *path, FFid *f)
 	}
 	if(*ploc == NULL){
 		p = emalloc(sizeof(*p));
-		p->path = s;
-		p->ffids = ecalloc(sizeof(*p->ffids), 3);
-		p->maxfid = 3;
-		*p->ffids = f;
-		p->nfid = 1;
 		*ploc = p;
-		f->paddr = p->ffids;
-		f->npath = &p->nfid;
 	}else{
 		free(s);
 		p = *ploc;
-		if(p->nfid == p->maxfid){
-			p->maxfid += 3;
-			p->ffids = ereallocarray(p->ffids, sizeof(*p->ffids), p->maxfid);
-		}
-		for(fp = p->ffids; fp < p->ffids + p->maxfid; fp++){
-			if(*fp == NULL)
-				break;
-		}
-		*fp = f;
-		p->nfid++;
-		f->paddr = fp;
-		f->npath = &p->nfid;
+		p->ffid->pfid = NULL;
 	}
+	p->path = s;
+	p->ffid = f;
+	f->pfid = p;
 	return 0;
 }
 
 FFid*
 hasfid(const char *path)
 {
-	FFid	**fp;
 	PFid	*p;
 	char	*s;
 	int	h;
@@ -325,29 +309,29 @@ hasfid(const char *path)
 			break;
 	}
 	free(s);
-	if(p == NULL || p->nfid == 0)
+	if(p == NULL)
 		return NULL;
-	for(fp = p->ffids; *fp != NULL; fp++)
-		;
-	return *fp;
+	return p->ffid;
 }
 
-/* WIP
 FFid*
 fidclone(FFid *f)
 {
 	Fcall	twalk, rwalk;
-	FFid	newf;
+	FFid	*newf;
 
-	memset(&twalk, 0 sizeof(twalk));
+	memset(&twalk, 0, sizeof(twalk));
 	twalk.type = Twalk;
 	twalk.fid = f->fid;
 	newf = uniqfid();
 	twalk.newfid = f->fid;
 	twalk.nwname = 0;
-	if(do9p(&twalk, &rwalk) != 0);
-		return -1;
-	if(f->pfid != NULL && *f->pfid != NULL)
-		f->
-	
-*/
+	if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0)
+		return NULL;
+	if(f->pfid != NULL){
+		newf->pfid = f->pfid;
+		f->pfid = NULL;
+	}
+	newf->qid = *rwalk.wqid;
+	return newf;
+}

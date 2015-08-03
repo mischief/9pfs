@@ -23,6 +23,7 @@ enum
 	NHASH = 1009
 };
 
+int		srvfd;
 FFid		*rootfid;
 void		*tbuf, *rbuf;
 int		fids;
@@ -35,42 +36,33 @@ FFid		*uniqfid(void);
 int		hashstr(const char*);
 
 void
-init9p(int m)
+init9p(int sfd, int m)
 {
 	unsigned int	seed;
 	int		rfd;
 
+	srvfd = sfd;
+	msize = m;
 	if((rfd = open("/dev/random", O_RDONLY)) == -1)
 		err(1, "Could not open /dev/random");
 	if(read(rfd, &seed, sizeof(seed)) != sizeof(seed))
 		err(1, "Bad /dev/random read");
 	close(rfd);
 	srandom(seed);
-
-	if((msize = _9pversion(m) <= 0))
-		errx(1, "Bad msize");
-	tbuf = emalloc(msize);
-	rbuf = emalloc(msize);
-	if((rootfid = _9pattach(0, NOFID)) == NULL)
-		errx(1, "Could not attach");
 }
 
 int
-do9p(Fcall *t, Fcall *r, uchar *tb, uchar *rb)
+do9p(Fcall *t, Fcall *r)
 {
 	int	n;
 
-	n = convS2M(t, tb, msize);
-	write(srvfd, tb, n);
-	if((n = read9pmsg(srvfd, rb, msize)) == -1)
+	n = convS2M(t, tbuf, msize);
+	write(srvfd, tbuf, n);
+	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
 		errx(1, "Bad 9p read.");
-	convM2S(rb, n, r);
-	if(r->type == Rerror)
+	convM2S(rbuf, n, r);
+	if(r->type == Rerror || r->type != t->type+1)
 		return -1;
-	if(r->type != t->type+1){
-		_9perrno = ENOENT;
-		return -1;
-	}
 	return 0;
 }
 	
@@ -78,24 +70,26 @@ int
 _9pversion(uint32_t m)
 {
 	Fcall	tver, rver;
-	void	*t, *r;
 
-	t = emalloc(m);
-	r = emalloc(m);
 	tver.type = Tversion;
 	tver.tag = 0;
 	tver.msize = m;
 	tver.version = VERSION9P;
 
-	if(do9p(&tver, &rver, t, r) != 0)
+	tbuf = erealloc(tbuf, m);
+	rbuf = erealloc(rbuf, m);
+	if(do9p(&tver, &rver) != 0)
 		errx(1, "Could not establish version");
-	free(t);
-	free(r);
+	if(rver.msize != m){
+		msize = rver.msize;
+		tbuf = erealloc(tbuf, msize);
+		rbuf = erealloc(rbuf, msize);
+	}
 	return rver.msize;
 }
 
 FFid*
-_9pattach(uint32_t fid, uint32_t afid)
+_9pattach(FFid* ffid, FFid *afid)
 {
 	FFid		*f;
 	Fcall		tattach, rattach;
@@ -105,13 +99,13 @@ _9pattach(uint32_t fid, uint32_t afid)
 		errx(1, "Could not get user");
 	tattach.type = Tattach;
 	tattach.tag = 0;
-	tattach.fid = fid;
-	tattach.afid = afid;
+	tattach.fid = ffid->fid;
+	tattach.afid = afid->fid;
 	tattach.uname = pw->pw_name;
 	tattach.msize = msize;
 	if(do9p(&tattach, &rattach, tbuf, rbuf) != 0)
 		errx(1, "Could not attach");
-	f = lookup(0, PUT);
+	f = lookup(ffid->fid, PUT);
 	if(addfid("/", f) == -1)
 		errx(1, "Reused fid");
 	f->fid = tattach.fid;
@@ -200,14 +194,15 @@ _9pstat(FFid *f, struct stat *s)
 }
 
 int
-_9pclunk(uint32_t fid)
+_9pclunk(FFid *f)
 {
-	Fcall	t, r;
+	Fcall	tclunk, rclunk;
 
-	lookup(fid, DEL);
+	memset(&tclunk, 0, sizeof(tclunk));
+	if(lookup(f->fid, DEL) != NULL)
+		return -1;
 	t.type = Tclunk;
 	t.fid = fid;
-	t.tag = 0;
 	do9p(&t, &r, tbuf, rbuf);
 	return 0;
 }
@@ -230,6 +225,7 @@ lookup(uint32_t fid, int act)
 {
 	FFid	**floc, *f;
 	
+	f = NULL;
 	for(floc = fidhash + fid % NHASH; *floc != NULL; floc = &(*floc)->link){
 		if((*floc)->fid == fid)
 			break;
@@ -238,18 +234,7 @@ lookup(uint32_t fid, int act)
 	case GET:
 		if(*floc == NULL)
 			return NULL;
-		break;
-	case DEL:
-		if(*floc == NULL)
-			return NULL;
-		if(fid != 0){
-			f = *floc;
-			*floc = (*floc)->link;
-			if(f->pfid != NULL){
-				f->pfid->ffid = NULL;
-			}
-			free(f);
-		}
+		f = *floc;
 		break;
 	case PUT:
 		if(*floc != NULL)
@@ -259,7 +244,14 @@ lookup(uint32_t fid, int act)
 		*floc = f;
 		break;
 	}
-	return *floc;			
+	case DEL:
+		if(*floc == NULL || (*floc)->pfid != NULL)
+			return *floc;
+		f = *floc;
+		*floc = (*floc)->link;
+		free(f);
+		break;
+	return f;			
 }
 
 int
@@ -281,14 +273,10 @@ addfid(const char *path, FFid *f)
 		if(strcmp(s, (*ploc)->path) == 0)
 			break;
 	}
-	if(*ploc == NULL){
-		p = emalloc(sizeof(*p));
-		*ploc = p;
-	}else{
-		free(s);
-		p = *ploc;
-		p->ffid->pfid = NULL;
-	}
+	if(*ploc != NULL)
+		return -1;
+	p = emalloc(sizeof(*p));
+	*ploc = p;
 	p->path = s;
 	p->ffid = f;
 	f->pfid = p;
@@ -324,14 +312,10 @@ fidclone(FFid *f)
 	twalk.type = Twalk;
 	twalk.fid = f->fid;
 	newf = uniqfid();
-	twalk.newfid = f->fid;
+	twalk.newfid = newf->fid;
 	twalk.nwname = 0;
-	if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0)
+	if(do9p(&twalk, &rwalk) != 0)
 		return NULL;
-	if(f->pfid != NULL){
-		newf->pfid = f->pfid;
-		f->pfid = NULL;
-	}
 	newf->qid = *rwalk.wqid;
 	return newf;
 }

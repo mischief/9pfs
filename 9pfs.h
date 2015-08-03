@@ -24,14 +24,13 @@ struct PFid
 	FFid	*ffid;
 };
 
-int	srvfd;
 int	_9perrno;
 
-int	_9pversion(uint32_t);
-FFid	*_9pattach(uint32_t, uint32_t);
+int	_9pversion(FFid*);
+FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
 int	_9pstat(FFid*, struct stat*);
-int	_9pclunk(uint32_t);
+int	_9pclunk(FFid*);
 int	_9popen(FFid*, int);
 
 void	init9p(int);

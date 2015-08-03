@@ -22,10 +22,10 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	int	r;
 
-	if((f = hasfid(path)) == NULL)
+	if((f = hasfid(path)) == NULL){
 		f = _9pwalk(path);
-	else
-		f = fidclone(f);
+		addfid(path, f);
+	}
 	if(f == NULL)
 		return -_9perrno;
 	r = _9pstat(f, st);
@@ -37,19 +37,27 @@ int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid		*f;
-	int		mode;
 
-	mode = ffi->flags & 3;
-	if((f = hasfid(path)) == NULL)
+	if((f = hasfid(path)) == NULL){
 		f = _9pwalk(path);
-	else
+		addfid(path, f);
+	}else
 		f = fidclone(f);
+	f->mode = ffi->flags & 3;
 	if(f == NULL)
 		return -_9perrno;
-	addfid(path, f);
-	if(_9popen(f, 1) == -1)
+	if(_9popen(f) == -1)
 		return -_9perrno;
-	ffi->fh = f->fid;
+	if(!(f->qid.type & QTDIR))
+		return -ENOTDIR;
+	ffi->fh = f;
+	return 0;
+}
+
+int
+fsreaddir(const char *path, void *data, fuse_fill_dir_t f,
+	off_t off, struct fuse_file_info *ffi)
+{
 	return 0;
 }
 

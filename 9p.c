@@ -196,15 +196,21 @@ _9pstat(FFid *f, struct stat *s)
 }
 
 int
+_9popen(FFid *f)
+{
+	return 0;
+}
+
+int
 _9pclunk(FFid *f)
 {
 	Fcall	tclunk, rclunk;
 
 	if(f == NULL)
 		return 0;
-	memset(&tclunk, 0, sizeof(tclunk));
 	if(lookup(f->fid, DEL) != FDEL)
 		return -1;
+	memset(&tclunk, 0, sizeof(tclunk));
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
 	do9p(&tclunk, &rclunk);

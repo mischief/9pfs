@@ -30,4 +30,4 @@ ${TARG}:	${OBJS} ${LIB}
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${OBJS} ${TARG} ${LIB} simplefuse 9ptest
+	rm -f ${OBJS} ${TARG} ${LIB} simplefuse 9ptest 9ptest.o

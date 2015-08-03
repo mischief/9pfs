@@ -1,39 +1,27 @@
-enum
-{
-	RERROR,
-	RMISS,
-};
-
 typedef struct FFid	FFid;
 typedef struct PFid 	PFid;
 
 struct FFid
 {
 	FFid		*link;
+	FFid		*pathlink;
 	int		mode;
 	uint32_t	fid;
 	Qid		qid;
 	off_t		offset;
-	PFid		*pfid;
-};
-
-struct PFid
-{
-	PFid	*link;
-	char	*path;
-	FFid	*ffid;
+	char		*path;
 };
 
 int	_9perrno;
 
-int	_9pversion(FFid*);
+int	_9pversion(uint32_t);
 FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, int);
 
-void	init9p(int);
+void	init9p(int, int);
 
 FFid	*hasfid(const char*);
 int	addfid(const char*, FFid*);

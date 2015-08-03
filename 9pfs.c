@@ -63,7 +63,7 @@ main(int argc, char *argv[])
 {
 	struct sockaddr_un	p9addr;
 	char			*addr;
-	int			c, UFLAG, TFLAG, sfd;
+	int			c, UFLAG, TFLAG, srvfd;
 
 	addr = NULL;
 	TFLAG = UFLAG = 0;
@@ -93,9 +93,9 @@ main(int argc, char *argv[])
 	strecpy(p9addr.sun_path,
 		p9addr.sun_path+sizeof(p9addr.sun_path),
 		addr);
-	sfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
+	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
 	connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr));
-	init9p(sfd, 8192);
+	init9p(srvfd, 8192);
 	fuse_main(argc, argv, &fsops, NULL);
 	exit(0);
 }

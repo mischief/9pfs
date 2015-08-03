@@ -29,7 +29,7 @@ void		*tbuf, *rbuf;
 int		fids;
 int		msize;
 FFid		*fidhash[NHASH];
-PFid		*pathhash[NHASH];
+FFid		*pathhash[NHASH];
 
 FFid		*lookup(uint32_t, int);
 FFid		*uniqfid(void);
@@ -103,7 +103,7 @@ _9pattach(FFid* ffid, FFid *afid)
 	tattach.afid = afid->fid;
 	tattach.uname = pw->pw_name;
 	tattach.msize = msize;
-	if(do9p(&tattach, &rattach, tbuf, rbuf) != 0)
+	if(do9p(&tattach, &rattach) != 0)
 		errx(1, "Could not attach");
 	f = lookup(ffid->fid, PUT);
 	if(addfid("/", f) == -1)
@@ -133,13 +133,13 @@ _9pwalk(const char *path)
 				break;
 			*curpath++ = '\0';
 		}
-		_9pclunk(twalk.fid);
+		_9pclunk(f);
 		twalk.type = Twalk;
 		twalk.fid = nwalk ? rootfid->fid : twalk.newfid;
 		f = uniqfid();
 		twalk.newfid = f->fid;
 		twalk.nwname = i;
-		if(do9p(&twalk, &rwalk, tbuf, rbuf) != 0){
+		if(do9p(&twalk, &rwalk) != 0){
 			free(buf);
 			_9perrno = -1;
 			return NULL;
@@ -166,7 +166,7 @@ _9pstat(FFid *f, struct stat *s)
 	t.type = Tstat;
 	t.fid = f->fid;
 	t.tag = 0;
-	if(do9p(&t, &r, tbuf, rbuf) != 0)
+	if(do9p(&t, &r) != 0)
 		return -1;
 	d = emalloc(sizeof(*d) + r.nstat);
 	if(convM2D(r.stat, r.nstat, d, (char*)(d+1)) != r.nstat){
@@ -198,12 +198,14 @@ _9pclunk(FFid *f)
 {
 	Fcall	tclunk, rclunk;
 
+	if(f == NULL)
+		return 0;
 	memset(&tclunk, 0, sizeof(tclunk));
 	if(lookup(f->fid, DEL) != NULL)
 		return -1;
-	t.type = Tclunk;
-	t.fid = fid;
-	do9p(&t, &r, tbuf, rbuf);
+	tclunk.type = Tclunk;
+	tclunk.fid = f->fid;
+	do9p(&tclunk, &rclunk);
 	return 0;
 }
 
@@ -224,18 +226,13 @@ FFid*
 lookup(uint32_t fid, int act)
 {
 	FFid	**floc, *f;
-	
+
 	f = NULL;
 	for(floc = fidhash + fid % NHASH; *floc != NULL; floc = &(*floc)->link){
 		if((*floc)->fid == fid)
 			break;
 	}
 	switch(act){
-	case GET:
-		if(*floc == NULL)
-			return NULL;
-		f = *floc;
-		break;
 	case PUT:
 		if(*floc != NULL)
 			return NULL;
@@ -243,14 +240,15 @@ lookup(uint32_t fid, int act)
 		f->fid = fid;
 		*floc = f;
 		break;
-	}
 	case DEL:
-		if(*floc == NULL || (*floc)->pfid != NULL)
+		if(*floc == NULL || (*floc)->path != NULL)
 			return *floc;
 		f = *floc;
 		*floc = (*floc)->link;
 		free(f);
+		f = NULL;
 		break;
+	}
 	return f;			
 }
 
@@ -263,43 +261,38 @@ str2int(const char *s)
 int
 addfid(const char *path, FFid *f)
 {
-	PFid	**ploc, *p;
+	FFid	**floc;
 	char	*s;
 	int	h;
 
 	s = cleanname(estrdup(path));
 	h = str2int(s);
-	for(ploc = pathhash + h % NHASH; *ploc != NULL; ploc = &(*ploc)->link){
-		if(strcmp(s, (*ploc)->path) == 0)
+	for(floc = pathhash + h % NHASH; *floc != NULL; floc = &(*floc)->pathlink){
+		if(strcmp(s, (*floc)->path) == 0)
 			break;
 	}
-	if(*ploc != NULL)
+	if(*floc != NULL)
 		return -1;
-	p = emalloc(sizeof(*p));
-	*ploc = p;
-	p->path = s;
-	p->ffid = f;
-	f->pfid = p;
+	*floc = f;
+	f->path = s;
 	return 0;
 }
 
 FFid*
 hasfid(const char *path)
 {
-	PFid	*p;
+	FFid	*f;
 	char	*s;
 	int	h;
 
 	s = cleanname(estrdup(path));
 	h = str2int(s);
-	for(p = pathhash[h % NHASH]; p != NULL; p = p->link){
-		if(strcmp(s, p->path) == 0)
+	for(f = pathhash[h % NHASH]; f != NULL; f = f->link){
+		if(strcmp(s, f->path) == 0)
 			break;
 	}
 	free(s);
-	if(p == NULL)
-		return NULL;
-	return p->ffid;
+	return f;
 }
 
 FFid*

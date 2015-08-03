@@ -15,6 +15,8 @@
 #include "fcall.h"
 #include "9pfs.h"
 
+#define	 FDEL	((FFid*)~0)
+
 enum
 {
 	PUT,
@@ -36,13 +38,12 @@ FFid		*uniqfid(void);
 int		hashstr(const char*);
 
 void
-init9p(int sfd, int m)
+init9p(int sfd)
 {
 	unsigned int	seed;
 	int		rfd;
 
 	srvfd = sfd;
-	msize = m;
 	if((rfd = open("/dev/random", O_RDONLY)) == -1)
 		err(1, "Could not open /dev/random");
 	if(read(rfd, &seed, sizeof(seed)) != sizeof(seed))
@@ -59,7 +60,7 @@ do9p(Fcall *t, Fcall *r)
 	n = convS2M(t, tbuf, msize);
 	write(srvfd, tbuf, n);
 	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
-		errx(1, "Bad 9p read.");
+		errx(1, "Bad 9p read");
 	convM2S(rbuf, n, r);
 	if(r->type == Rerror || r->type != t->type+1)
 		return -1;
@@ -76,8 +77,9 @@ _9pversion(uint32_t m)
 	tver.msize = m;
 	tver.version = VERSION9P;
 
-	tbuf = erealloc(tbuf, m);
-	rbuf = erealloc(rbuf, m);
+	msize = m;
+	tbuf = erealloc(tbuf, msize);
+	rbuf = erealloc(rbuf, msize);
 	if(do9p(&tver, &rver) != 0)
 		errx(1, "Could not establish version");
 	if(rver.msize != m){
@@ -85,7 +87,7 @@ _9pversion(uint32_t m)
 		tbuf = erealloc(tbuf, msize);
 		rbuf = erealloc(rbuf, msize);
 	}
-	return rver.msize;
+	return msize;
 }
 
 FFid*
@@ -95,10 +97,10 @@ _9pattach(FFid* ffid, FFid *afid)
 	Fcall		tattach, rattach;
 	struct passwd	*pw;
 
+	memset(&tattach, 0, sizeof(tattach));
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
 	tattach.type = Tattach;
-	tattach.tag = 0;
 	tattach.fid = ffid->fid;
 	tattach.afid = afid->fid;
 	tattach.uname = pw->pw_name;
@@ -161,15 +163,15 @@ _9pstat(FFid *f, struct stat *s)
 	Dir		*d;
 	struct passwd	*p;
 	struct group	*g;
-	Fcall		t, r;
+	Fcall		tstat, rstat;
 
-	t.type = Tstat;
-	t.fid = f->fid;
-	t.tag = 0;
-	if(do9p(&t, &r) != 0)
+	memset(&tstat, 0, sizeof(tstat));
+	tstat.type = Tstat;
+	tstat.fid = f->fid;
+	if(do9p(&tstat, &rstat) != 0)
 		return -1;
-	d = emalloc(sizeof(*d) + r.nstat);
-	if(convM2D(r.stat, r.nstat, d, (char*)(d+1)) != r.nstat){
+	d = emalloc(sizeof(*d) + rstat.nstat);
+	if(convM2D(rstat.stat, rstat.nstat, d, (char*)(d+1)) != rstat.nstat){
 		free(d);
 		return -1;
 	}
@@ -180,7 +182,7 @@ _9pstat(FFid *f, struct stat *s)
 		s->st_mode |= S_IFDIR;
 	else
 		s->st_mode |= S_IFREG;
-	s->st_nlink = d->mode & DMDIR ? r.nstat + 1 : 1;
+	s->st_nlink = d->mode & DMDIR ? rstat.nstat + 1 : 1;
 	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
 	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
 	s->st_size = d->length;
@@ -201,7 +203,7 @@ _9pclunk(FFid *f)
 	if(f == NULL)
 		return 0;
 	memset(&tclunk, 0, sizeof(tclunk));
-	if(lookup(f->fid, DEL) != NULL)
+	if(lookup(f->fid, DEL) != FDEL)
 		return -1;
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
@@ -246,7 +248,7 @@ lookup(uint32_t fid, int act)
 		f = *floc;
 		*floc = (*floc)->link;
 		free(f);
-		f = NULL;
+		f = FDEL;
 		break;
 	}
 	return f;			

@@ -21,7 +21,7 @@ int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, int);
 
-void	init9p(int, int);
+void	init9p(int);
 
 FFid	*hasfid(const char*);
 int	addfid(const char*, FFid*);

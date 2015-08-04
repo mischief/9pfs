@@ -8,6 +8,7 @@ struct FFid
 	int		mode;
 	uint32_t	fid;
 	Qid		qid;
+	uint32_t	iounit;
 	off_t		offset;
 	char		*path;
 };
@@ -19,7 +20,9 @@ FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
-int	_9popen(FFid*, int);
+int	_9popen(FFid*, char);
+long	_9pread(FFid*, char*, int);
+long	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);
 

@@ -62,7 +62,7 @@ do9p(Fcall *t, Fcall *r)
 	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
 		errx(1, "Bad 9p read");
 	convM2S(rbuf, n, r);
-	if(r->type == Rerror || r->type != t->type+1)
+	if(r->tag != t->tag || r->type == Rerror || r->type != t->type+1)
 		return -1;
 	return 0;
 }
@@ -196,9 +196,81 @@ _9pstat(FFid *f, struct stat *s)
 }
 
 int
-_9popen(FFid *f)
+_9popen(FFid *f, char mode)
 {
+	Fcall	topen, ropen;
+	
+	memset(&topen, 0, sizeof(topen));
+	topen.type = Topen;
+	topen.fid = f->fid;
+	topen.mode = mode;
+	if(do9p(&topen, &ropen) == -1)
+		return -1;
+	f->qid = ropen.qid;
+	f->iounit = ropen.iounit;
 	return 0;
+}
+
+static
+long
+dirpackage(uchar *buf, long ts, Dir **d)
+{
+	char *s;
+	long ss, i, n, nn, m;
+
+	*d = nil;
+	if(ts <= 0)
+		return 0;
+
+	/*
+	 * first find number of all stats, check they look like stats, & size all associated strings
+	 */
+	ss = 0;
+	n = 0;
+	for(i = 0; i < ts; i += m){
+		m = BIT16SZ + GBIT16(&buf[i]);
+		if(statcheck(&buf[i], m) < 0)
+			break;
+		ss += m;
+		n++;
+	}
+
+	if(i != ts)
+		return -1;
+
+	*d = malloc(n * sizeof(Dir) + ss);
+	if(*d == nil)
+		return -1;
+
+	/*
+	 * then convert all buffers
+	 */
+	s = (char*)*d + n * sizeof(Dir);
+	nn = 0;
+	for(i = 0; i < ts; i += m){
+		m = BIT16SZ + GBIT16((uchar*)&buf[i]);
+		if(nn >= n || convM2D(&buf[i], m, *d + nn, s) != m){
+			free(*d);
+			*d = nil;
+			return -1;
+		}
+		nn++;
+		s += m;
+	}
+
+	return nn;
+}
+
+long
+_9pdirread(FFid *f, Dir **d)
+{
+	uchar	buf[DIRMAX];
+	long	ts;
+
+	ts = _9pread(f, buf, sizeof(buf));
+	if(ts >= 0)
+		ts = dirpackage(buf, ts, d);
+	return ts;
 }
 
 int

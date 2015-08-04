@@ -9,6 +9,7 @@
 #include <fuse.h>
 #include <string.h>
 #include <err.h>
+#include <errno.h>
 
 #include "libc.h"
 #include "fcall.h"
@@ -46,18 +47,30 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	f->mode = ffi->flags & 3;
 	if(f == NULL)
 		return -_9perrno;
-	if(_9popen(f) == -1)
+	if(_9popen(f, OREAD) == -1)
 		return -_9perrno;
 	if(!(f->qid.type & QTDIR))
 		return -ENOTDIR;
-	ffi->fh = f;
+	ffi->fh = (uint64_t)f;
 	return 0;
 }
 
 int
-fsreaddir(const char *path, void *data, fuse_fill_dir_t f,
+fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
+	FFid		*f;
+	Dir		*d, **e;
+	long		n;
+	struct stat	s;
+
+	f = (FFid*)ffi->fh;
+	n = _9pdirread(f, &d);
+	for(e = &d; e < &d + n; e++){
+		s.st_ino = d->qid.path;
+		s.st_mode = d->mode & 0777;
+		ffd(data, (*e)->name, &s, 0);
+	}
 	return 0;
 }
 
@@ -103,7 +116,7 @@ main(int argc, char *argv[])
 		addr);
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
 	connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr));
-	init9p(srvfd, 8192);
+	init9p(srvfd);
 	fuse_main(argc, argv, &fsops, NULL);
 	exit(0);
 }

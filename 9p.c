@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -57,6 +58,7 @@ do9p(Fcall *t, Fcall *r)
 {
 	int	n;
 
+	t->tag = random();
 	n = convS2M(t, tbuf, msize);
 	write(srvfd, tbuf, n);
 	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
@@ -271,6 +273,14 @@ _9pdirread(FFid *f, Dir **d)
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
 	return ts;
+}
+
+long
+_9pread(FFid *f, void *buf, int n)
+{
+	Fcall	tread, rread;
+
+	return 0;
 }
 
 int

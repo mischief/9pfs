@@ -20,7 +20,7 @@ erealloc(void *p, size_t size)
 {
 	void	*v;
 
-	if((v = erealloc(p, size)) == NULL)
+	if((v = realloc(p, size)) == NULL)
 		err(1, "emalloc: out of memory");
 	return v;
 }

@@ -85,19 +85,20 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*s, *end;
+	char			*s, *end, *argv0;
 	int			c, srvfd;
 
+	argv0 = *argv++;
+	argc--;
 	memset(&p9addr, 0, sizeof(p9addr));
 	p9addr.sun_family = AF_UNIX;
 	s = p9addr.sun_path;
 	end = s + sizeof(p9addr.sun_path);
 	s = strecpy(s, end, "/tmp/ns.ben.:0/");
-	strecpy(s, end, *++argv);
-	argc--;
+	strecpy(s, end, *argv);
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
-		err(1, "Could not connect to %s", argv[1]);
+		err(1, "Could not connect to %s", p9addr.sun_family);
 	init9p(srvfd);
 	_9pversion(8192);
 	memset(&rfid, 0, sizeof(rfid));

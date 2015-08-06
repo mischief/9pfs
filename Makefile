@@ -20,7 +20,7 @@ LDADD=	-lfuse
 all:	${TARG}
 
 ${TARG}:	${TARG}.o ${OBJS}
-	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LIB} ${LDADD}
+	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}
 
 9ptest: 	9ptest.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ 9ptest.o ${OBJS}
@@ -32,4 +32,4 @@ runtest:	9ptest
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${OBJS} ${TARG} ${LIB} simplefuse 9ptest 9ptest.o
+	rm -f ${OBJS} ${TARG} ${TARG}.o ${LIB} simplefuse 9ptest 9ptest.o *.core

@@ -76,47 +76,34 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
-	.opendir = 	fsopendir
+	.opendir = 	fsopendir,
+	.readdir = 	fsreaddir
 };
 
 int
 main(int argc, char *argv[])
 {
+	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*addr;
-	int			c, UFLAG, TFLAG, srvfd;
-
-	addr = NULL;
-	TFLAG = UFLAG = 0;
-	while((c = getopt(argc, argv, "u:t:")) != -1){
-		switch(c){
-		case 't':
-			if(UFLAG)
-				usage();
-			TFLAG = 1;
-			addr = optarg;
-			break;
-		case 'u':
-			if(TFLAG)
-				usage();
-			UFLAG = 1;
-			addr = optarg;
-			break;
-		}
-	}
-	argc -= (optind - 1);
-	argv += (optind - 1);
-	if(!(UFLAG || TFLAG) || argc == 0)
-		usage();
+	char			*s, *end;
+	int			c, srvfd;
 
 	memset(&p9addr, 0, sizeof(p9addr));
 	p9addr.sun_family = AF_UNIX;
-	strecpy(p9addr.sun_path,
-		p9addr.sun_path+sizeof(p9addr.sun_path),
-		addr);
+	s = p9addr.sun_path;
+	end = s + sizeof(p9addr.sun_path);
+	s = strecpy(s, end, "/tmp/ns.ben.:0/");
+	strecpy(s, end, *++argv);
+	argc--;
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
-	connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr));
+	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
+		err(1, "Could not connect to %s", argv[1]);
 	init9p(srvfd);
+	_9pversion(8192);
+	memset(&rfid, 0, sizeof(rfid));
+	memset(&afid, 0, sizeof(afid));
+	afid.fid = NOFID;
+	rfid = *_9pattach(&rfid, &afid);
 	fuse_main(argc, argv, &fsops, NULL);
 	exit(0);
 }

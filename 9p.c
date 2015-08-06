@@ -128,7 +128,7 @@ _9pwalk(const char *path)
 	memset(&twalk, 0, sizeof(twalk));
 	buf = estrdup(path);
 	cleanname(buf);
-	curpath = buf;
+	curpath = buf + 1;
 	for(nwalk = 0; curpath != NULL && *curpath != '\0'; nwalk++){
 		for(i = 0; i < MAXWELEM && *curpath != '\0'; ){
 			twalk.wname[i++] = curpath;

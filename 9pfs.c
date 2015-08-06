@@ -59,13 +59,20 @@ int
 fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
-	FFid		*f;
+	FFid		*dots[2], **f;
 	Dir		*d, **e;
 	long		n;
 	struct stat	s;
 
-	f = (FFid*)ffi->fh;
-	n = _9pdirread(f, &d);
+	dots[0] = (FFid*)ffi->fh;
+	dots[1] = _9pwalkr(f, "..");
+	for(f = dots; f < dots + 2; f++){
+		s.st_ino = (*f)->qid.path;
+		s.st_mode = (*f)->mode & 0777;
+		ffd(data, (*f)->path, &s, 0);
+	}
+	_9pclunk(dots[1]);
+	n = _9pdirread(*dots, &d);
 	for(e = &d; e < &d + n; e++){
 		s.st_ino = d->qid.path;
 		s.st_mode = d->mode & 0777;

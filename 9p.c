@@ -113,11 +113,12 @@ _9pattach(FFid* ffid, FFid *afid)
 		errx(1, "Reused fid");
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
+	rootfid = f;
 	return f;
 }	
 
 FFid*
-_9pwalk(const char *path)
+_9pwalkr(FFid *r, const char *path)
 {
 	FFid	*f;
 	Fcall	twalk, rwalk;
@@ -138,7 +139,7 @@ _9pwalk(const char *path)
 		}
 		_9pclunk(f);
 		twalk.type = Twalk;
-		twalk.fid = nwalk ? rootfid->fid : twalk.newfid;
+		twalk.fid = nwalk ? r->fid : twalk.newfid;
 		f = uniqfid();
 		twalk.newfid = f->fid;
 		twalk.nwname = i;
@@ -153,8 +154,18 @@ _9pwalk(const char *path)
 			return NULL;
 		}
 	}
-	addfid(path, f);
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
+	f->from = r;
+	return f;
+}
+
+FFid*
+_9pwalk(const char *path)
+{
+	FFid	*f;
+
+	f = _9pwalkr(rootfid, path);
+	addfid(path, f);
 	return f;
 }
 

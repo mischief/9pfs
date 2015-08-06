@@ -5,6 +5,7 @@ struct FFid
 {
 	FFid		*link;
 	FFid		*pathlink;
+	FFid		*from;
 	int		mode;
 	uint32_t	fid;
 	Qid		qid;
@@ -18,6 +19,7 @@ int	_9perrno;
 int	_9pversion(uint32_t);
 FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
+FFid	*_9pwalkr(FFid*, const char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, char);

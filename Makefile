@@ -25,11 +25,14 @@ ${TARG}:	${TARG}.o ${OBJS}
 9ptest: 	9ptest.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ 9ptest.o ${OBJS}
 
-runtest:	9ptest
-	9ptest acme
+simplefuse:	simplefuse.o
+	${CC} ${LDFLAGS} -o $@ simplefuse.o ${LDADD}
+
+cleannametest:	cleannametest.o lib/cleanname.o
+	${CC} ${LDFLAGS} -o $@ cleannametest.o lib/cleanname.o
 	
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${OBJS} ${TARG} ${TARG}.o ${LIB} simplefuse 9ptest 9ptest.o *.core
+	rm -f ${OBJS} ${TARG} ${TARG}.o ${LIB} simplefuse 9ptest 9ptest.o *.core cleannametest.o cleannametest

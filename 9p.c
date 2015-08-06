@@ -130,6 +130,7 @@ _9pwalkr(FFid *r, const char *path)
 	buf = estrdup(path);
 	cleanname(buf);
 	curpath = buf + 1;
+	fprintf(stderr, "%s\n", curpath);
 	for(nwalk = 0; curpath != NULL && *curpath != '\0'; nwalk++){
 		for(i = 0; i < MAXWELEM && *curpath != '\0'; ){
 			twalk.wname[i++] = curpath;

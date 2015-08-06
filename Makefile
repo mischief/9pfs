@@ -35,4 +35,4 @@ cleannametest:	cleannametest.o lib/cleanname.o
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${OBJS} ${TARG} ${TARG}.o ${LIB} simplefuse 9ptest 9ptest.o *.core cleannametest.o cleannametest
+	rm -f ${TARG} ${LIB} ${OBJS} *.o simplefuse 9ptest cleannametest *.core 

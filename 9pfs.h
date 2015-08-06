@@ -21,7 +21,7 @@ FFid	*_9pwalk(const char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, char);
-long	_9pread(FFid*, void*, int);
+long	_9pread(FFid*, void*, size_t, off_t);
 long	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);

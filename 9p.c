@@ -75,7 +75,6 @@ _9pversion(uint32_t m)
 	Fcall	tver, rver;
 
 	tver.type = Tversion;
-	tver.tag = 0;
 	tver.msize = m;
 	tver.version = VERSION9P;
 
@@ -269,18 +268,27 @@ _9pdirread(FFid *f, Dir **d)
 	uchar	buf[DIRMAX];
 	long	ts;
 
-	ts = _9pread(f, buf, sizeof(buf));
+	ts = _9pread(f, buf, sizeof(buf), 0);
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
 	return ts;
 }
 
 long
-_9pread(FFid *f, void *buf, int n)
+_9pread(FFid *f, void *buf, size_t n, off_t off)
 {
 	Fcall	tread, rread;
 
-	return 0;
+	memset(&tread, 0, sizeof(tread));
+	tread.type = Tread;
+	tread.fid = f->fid;
+	tread.count = n;
+	tread.offset = off;
+	if(do9p(&tread, &rread) == -1)
+		return -1;
+	f->offset = rread.count + off;
+	memcpy(buf, rread.data, rread.count);
+	return rread.count;
 }
 
 int

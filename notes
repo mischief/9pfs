@@ -226,3 +226,12 @@ against QTDIR.
 this is FFid *fid; fid->qid.type&QTDIR
 
 I really don't know what the fuck I am doing now...
+
+I might want to use kqueue. I.e.:
+
+do9p calls kqueue and somehow returns to the correct function...
+
+it might be better just to write 9p into the kernel...
+
+I should probably look at sshfs architecture.
+

@@ -23,7 +23,7 @@ ${TARG}:	${TARG}.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LIB} ${LDADD}
 
 9ptest: 	9ptest.o ${OBJS}
-	${CC} ${LDFLAGS} -o $@ 9ptest.o ${OBJS} ${LDADD}
+	${CC} ${LDFLAGS} -o $@ 9ptest.o ${OBJS}
 
 runtest:	9ptest
 	9ptest acme

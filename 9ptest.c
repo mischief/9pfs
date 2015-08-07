@@ -41,7 +41,7 @@ main(int argc, char *argv[])
 	memset(&authfid, 0, sizeof(authfid));
 	authfid.fid = NOFID;
 	rootfid = *_9pattach(&rootfid, &authfid);
-	if((tfid = _9pwalk(argv[2])) == NULL){
+	if((tfid = _9pwalkr(&rootfid, argv[2])) == NULL){
 		close(srvfd);
 		errno = _9perrno;
 		err(1, "walk");

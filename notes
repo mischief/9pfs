@@ -235,3 +235,39 @@ it might be better just to write 9p into the kernel...
 
 I should probably look at sshfs architecture.
 
+This is what happens when I launch it  and then:
+
+$ cd foo
+$ ls
+
+Call: Tversion on fid 929
+Call: Tattach on fid 0
+Root fid is: 0
+about to enter main
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Twalk on fid 0
+Call: Topen on fid 1244383886
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+Call: Tstat on fid 0
+trying to read the dir
+Fid of the dir is: 1244383886
+About to clunk
+done with clunk
+Call: Tread on fid 1244383886
+
+so I don't know what that fid is.

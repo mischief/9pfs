@@ -1,15 +1,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <unistd.h>
-#include <string.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
 #include <err.h>
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include <errno.h>
 
 #include "libc.h"
@@ -118,38 +119,27 @@ _9pattach(FFid* ffid, FFid *afid)
 }	
 
 FFid*
-_9pwalkr(FFid *r, const char *path)
+_9pwalkr(FFid *r, char *path)
 {
 	FFid	*f;
 	Fcall	twalk, rwalk;
-	char	*curpath, *buf;
-	int	nwalk, i;
+	char	**s;
 
-	f = NULL;
 	memset(&twalk, 0, sizeof(twalk));
-	buf = estrdup(path);
-	cleanname(buf);
-	curpath = buf + 1;
-	fprintf(stderr, "%s\n", curpath);
-	for(nwalk = 0; curpath != NULL && *curpath != '\0'; nwalk++){
-		for(i = 0; i < MAXWELEM && *curpath != '\0'; ){
-			twalk.wname[i++] = curpath;
-			if((curpath = strchr(curpath, '/')) == NULL)
-				break;
-			*curpath++ = '\0';
-		}
+	f = NULL;
+	twalk.type = Twalk;
+	twalk.newfid = r->fid;
+	while(path != NULL){
+		for(s = twalk.wname; s < twalk.wname + MAXWELEM && path != NULL; s++)
+			*s = strsep(&path, "/");
 		_9pclunk(f);
-		twalk.type = Twalk;
-		twalk.fid = nwalk ? r->fid : twalk.newfid;
+		twalk.fid = twalk.newfid;
 		f = uniqfid();
 		twalk.newfid = f->fid;
-		twalk.nwname = i;
-		if(do9p(&twalk, &rwalk) != 0){
-			free(buf);
-			_9perrno = -1;
+		twalk.nwname = s - twalk.wname;
+		if(do9p(&twalk, &rwalk) == -1)
 			return NULL;
-		}
-		if(rwalk.nwqid != twalk.nwname){
+		if(rwalk.nwqid < twalk.nwname){
 			lookup(f->fid, DEL);
 			_9perrno = ENOENT;
 			return NULL;
@@ -164,9 +154,13 @@ FFid*
 _9pwalk(const char *path)
 {
 	FFid	*f;
+	char	*buf, *cleanpath;
 
-	f = _9pwalkr(rootfid, path);
-	addfid(path, f);
+	cleanpath = estrdup(path);
+	buf = estrdup(cleanname(cleanpath));
+	f = _9pwalkr(rootfid, buf+1);
+	free(buf);
+	addfid((const char*)cleanname, f);
 	return f;
 }
 

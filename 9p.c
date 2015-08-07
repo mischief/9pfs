@@ -158,6 +158,8 @@ _9pwalk(const char *path)
 
 	cleanpath = estrdup(path);
 	buf = estrdup(cleanname(cleanpath));
+	if(strcmp(buf, "/") == 0)
+		return rootfid;
 	f = _9pwalkr(rootfid, buf+1);
 	free(buf);
 	addfid((const char*)cleanname, f);

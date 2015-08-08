@@ -38,14 +38,13 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid		*f;
 
-	if((f = hasfid(path)) == NULL){
+	if((f = hasfid(path)) == NULL)
 		f = _9pwalk(path);
-		addfid(path, f);
-	}else
+	else
 		f = fidclone(f);
-	f->mode = ffi->flags & 3;
 	if(f == NULL)
 		return -_9perrno;
+	f->mode = ffi->flags & 3;
 	if(_9popen(f, OREAD) == -1)
 		return -_9perrno;
 	if(!(f->qid.type & QTDIR))

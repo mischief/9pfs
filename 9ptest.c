@@ -19,7 +19,8 @@
 int
 main(int argc, char *argv[])
 {
-	FFid			rootfid, authfid, *tfid, *newfid;
+	FFid			rootfid, authfid, *tfid;
+	Dir			*d, **e;
 	struct sockaddr_un	p9addr;
 	char			*s, *end, buf[1000];
 	int			srvfd, n;
@@ -46,13 +47,8 @@ main(int argc, char *argv[])
 	tfid = fidclone(&rootfid);
 	fprintf(stderr, "Cloned fid is %d\n", tfid->fid);
 	fprintf(stderr, "Cloned qid is %d\n", tfid->qid.path);
-	if((newfid = _9pwalkr(tfid, argv[2])) == NULL){
-		close(srvfd);
-		errno = _9perrno;
-		err(1, "walk");
-	}
-	n = _9pread(newfid, buf, 1000, 0);
-	write(1, buf, n);
+	n = _9pdirread(tfid, &d);
+	for(
 	close(srvfd);
 	exit(0);
 }

@@ -78,7 +78,6 @@ do9p(Fcall *t, Fcall *r)
 {
 	int	n;
 
-	fprintf(stderr, "Call: %s on fid %d\n", calls2str[t->type], t->fid);
 	t->tag = random();
 	n = convS2M(t, tbuf, msize);
 	write(srvfd, tbuf, n);
@@ -135,7 +134,6 @@ _9pattach(FFid* ffid, FFid *afid)
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
 	rootfid = f;
-	fprintf(stderr, "Root fid is: %d\n", rootfid->fid);
 	return f;
 }	
 
@@ -144,7 +142,7 @@ _9pwalkr(FFid *r, char *path)
 {
 	FFid	*f;
 	Fcall	twalk, rwalk;
-	char	**s, **t;
+	char	**s;
 
 	memset(&twalk, 0, sizeof(twalk));
 	f = NULL;
@@ -158,12 +156,8 @@ _9pwalkr(FFid *r, char *path)
 		f = uniqfid();
 		twalk.newfid = f->fid;
 		twalk.nwname = s - twalk.wname;
-		fprintf(stderr, "about to 9p with the following walk:\n");
-		for(t = twalk.wname; t < s; t++)
-			fprintf(stderr, "%s\n", *t);
 		if(do9p(&twalk, &rwalk) == -1)
 			return NULL;
-		fprintf(stderr, "Did 9p\n");
 		if(rwalk.nwqid < twalk.nwname){
 			lookup(f->fid, DEL);
 			_9perrno = ENOENT;

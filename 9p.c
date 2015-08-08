@@ -95,10 +95,10 @@ _9pversion(uint32_t m)
 {
 	Fcall	tver, rver;
 
+	memset(&tver, 0, sizeof(tver));
 	tver.type = Tversion;
 	tver.msize = m;
 	tver.version = VERSION9P;
-
 	msize = m;
 	tbuf = erealloc(tbuf, msize);
 	rbuf = erealloc(rbuf, msize);
@@ -440,6 +440,8 @@ fidclone(FFid *f)
 	twalk.nwname = 0;
 	if(do9p(&twalk, &rwalk) != 0)
 		return NULL;
+	if(rwalk.nwqid != 0)
+		err(1, "fidclone was not zero");
 	newf->qid = *rwalk.wqid;
 	return newf;
 }

@@ -40,12 +40,19 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid		*f;
 
+	fprintf(stderr, "opendir path is %s\n", path);
 	if((f = hasfid(path)) == NULL){
 		fprintf(stderr, "no fid for path %s\n", path);
 		f = _9pwalk(path);
 		addfid(path, f);
-	}else
+	}else{
+		fprintf(stderr, "in fsopendir original fid is %d\n", f->fid);
+		fprintf(stderr, "in fsopendir original qid is %lld\n", f->qid.path);
+		fprintf(stderr, "in fsopendir original fid path is %s\n", f->path);
 		f = fidclone(f);
+		fprintf(stderr, "in fsopendir cloned fid is %d\n", f->fid);
+		fprintf(stderr, "in fsopendir cloned qid is %lld\n", f->qid.path);
+	}
 	f->mode = ffi->flags & 3;
 	if(f == NULL)
 		return -_9perrno;
@@ -65,36 +72,25 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	Dir		*d, **e;
 	long		n;
 	struct stat	s;
-/*	struct
- *	{
- *		char	*str;
- *		FFid	*f;
- *	}		dots[2], *ds;
- */
-	int		i;
-	static char	*dots[2] = {
-		".",
-		".."
-	};
+	struct
+	{
+		char	*str;
+		FFid	*f;
+	}		dots[2], *ds;
 
 	f = (FFid*)ffi->fh;
-	fprintf(stderr, "trying to read the dir\n");
 	fprintf(stderr, "Fid of the dir is: %d\n", f->fid);
-/*	dots[0].f = (FFid*)ffi->fh;
- *	dots[0].str = ".";
- *	dots[1].f = _9pwalkr((FFid*)ffi->fh, "..");
- *	dots[1].str = "..";
- *	fprintf(stderr, "Past .. walk\n");
- *	for(ds = dots; ds < dots + 2; ds++){
- *		s.st_ino = ds->f->qid.path;
- *		s.st_mode = ds->f->mode & 0777;
- *		ffd(data, ds->str, &s, 0);
- *	}
- */
-	for(i = 0; i < 2; i++)
-		ffd(data, dots[i], NULL, 0);
+	dots[0].f = (FFid*)ffi->fh;
+	dots[0].str = ".";
+	dots[1].f = _9pwalkr((FFid*)ffi->fh, "..");
+	dots[1].str = "..";
+	for(ds = dots; ds < dots + 2; ds++){
+		s.st_ino = ds->f->qid.path;
+		s.st_mode = ds->f->mode & 0777;
+		ffd(data, ds->str, &s, 0);
+	}
 	fprintf(stderr, "About to clunk\n");
-/*	_9pclunk(dots[1].f); */
+	_9pclunk(dots[1].f);
 	fprintf(stderr, "done with clunk\n");
 	n = _9pdirread((FFid*)ffi->fh, &d);
 	for(e = &d; e < &d + n; e++){

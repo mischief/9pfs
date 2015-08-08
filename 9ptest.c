@@ -19,10 +19,10 @@
 int
 main(int argc, char *argv[])
 {
-	FFid			rootfid, authfid, *tfid;
+	FFid			rootfid, authfid, *tfid, *newfid;
 	struct sockaddr_un	p9addr;
 	char			*s, *end, buf[1000];
-	int			srvfd;
+	int			srvfd, n;
 
 	if(argc < 3)
 		errx(1, "What 9p file to connect to?");
@@ -41,13 +41,18 @@ main(int argc, char *argv[])
 	memset(&authfid, 0, sizeof(authfid));
 	authfid.fid = NOFID;
 	rootfid = *_9pattach(&rootfid, &authfid);
-	if((tfid = _9pwalkr(&rootfid, argv[2])) == NULL){
+	fprintf(stderr, "rootfid fid is %d\n", rootfid.fid);
+	fprintf(stderr, "rootfid qid is %d\n", rootfid.qid.path);
+	tfid = fidclone(&rootfid);
+	fprintf(stderr, "Cloned fid is %d\n", tfid->fid);
+	fprintf(stderr, "Cloned qid is %d\n", tfid->qid.path);
+	if((newfid = _9pwalkr(tfid, argv[2])) == NULL){
 		close(srvfd);
 		errno = _9perrno;
 		err(1, "walk");
 	}
-	_9pread(tfid, buf, sizeof(buf), 0);
-	printf("%s\n", buf);
+	n = _9pread(newfid, buf, 1000, 0);
+	write(1, buf, n);
 	close(srvfd);
 	exit(0);
 }

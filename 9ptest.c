@@ -4,13 +4,13 @@
 #include <sys/un.h>
 
 #include <unistd.h>
-#include <errno.h>
 #include <err.h>
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include "libc.h"
 #include "fcall.h"
@@ -20,7 +20,7 @@ int
 main(int argc, char *argv[])
 {
 	FFid			rootfid, authfid, *tfid;
-	Dir			*d, **e;
+	Dir			*d, *e;
 	struct sockaddr_un	p9addr;
 	char			*s, *end, buf[1000];
 	int			srvfd, n;
@@ -42,13 +42,18 @@ main(int argc, char *argv[])
 	memset(&authfid, 0, sizeof(authfid));
 	authfid.fid = NOFID;
 	rootfid = *_9pattach(&rootfid, &authfid);
-	fprintf(stderr, "rootfid fid is %d\n", rootfid.fid);
-	fprintf(stderr, "rootfid qid is %d\n", rootfid.qid.path);
+	fprintf(stderr, "rootfid fid is %u\n", rootfid.fid);
+	fprintf(stderr, "rootfid qid is %llu\n", rootfid.qid.path);
 	tfid = fidclone(&rootfid);
-	fprintf(stderr, "Cloned fid is %d\n", tfid->fid);
-	fprintf(stderr, "Cloned qid is %d\n", tfid->qid.path);
+	fprintf(stderr, "Cloned fid is %u\n", tfid->fid);
+	fprintf(stderr, "Cloned qid is %llu\n", tfid->qid.path);
+	_9popen(tfid, OREAD);
+	fprintf(stderr, "after open, qid is %llu\n", tfid->qid.path);
 	n = _9pdirread(tfid, &d);
-	for(
+	fprintf(stderr, "%d\n", n);
+	for(e = d; e < d + n; e++)
+		printf("%s\n", e->name);
+	_9pclunk(tfid);
 	close(srvfd);
 	exit(0);
 }

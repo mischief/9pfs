@@ -295,7 +295,7 @@ _9pdirread(FFid *f, Dir **d)
 	uchar	buf[DIRMAX];
 	long	ts;
 
-	ts = _9pread(f, buf, sizeof(buf), 0);
+	ts = _9pread(f, buf, f->iounit, 0);
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
 	return ts;

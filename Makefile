@@ -19,6 +19,9 @@ LDADD=	-lfuse
 
 all:	${TARG}
 
+install:	${TARG}
+	cp ${TARG} ${HOME}/bin
+
 ${TARG}:	${TARG}.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}
 

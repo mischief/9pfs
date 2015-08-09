@@ -358,6 +358,9 @@ lookup(uint32_t fid, int act)
 			break;
 	}
 	switch(act){
+	case GET:
+		f = *floc;
+		break;
 	case PUT:
 		if(*floc != NULL)
 			return NULL;

@@ -383,7 +383,12 @@ lookup(uint32_t fid, int act)
 int
 str2int(const char *s)
 {
-	return 0;
+	int		hash;
+	const char 	*c;
+
+	for(c = s, hash = 0; *c != '\0'; c++)
+		hash += hash * 31 + *c;
+	return hash >= 0 ? hash : -hash;
 }
 
 int

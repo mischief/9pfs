@@ -34,6 +34,13 @@ fsgetattr(const char *path, struct stat *st)
 }
 
 int
+fsflush(const char *path, struct fuse_file_info *ffi)
+{
+	if(_9pclunk((FFid*)ffi->fh) != 0)
+		err(1, "Could not flush");
+}
+
+int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid		*f;

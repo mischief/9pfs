@@ -16,14 +16,19 @@
 #include "fcall.h"
 #include "9pfs.h"
 
+enum
+{
+	MSIZE = 512
+};
+
 int
 main(int argc, char *argv[])
 {
 	FFid			rootfid, authfid, *tfid;
 	Dir			*d, *e;
 	struct sockaddr_un	p9addr;
-	char			*s, *end, buf[1000];
-	int			srvfd, n;
+	char			*s, *end, buf[18400];
+	int			srvfd, n, size, r, msize;
 
 	if(argc < 3)
 		errx(1, "What 9p file to connect to?");
@@ -37,22 +42,29 @@ main(int argc, char *argv[])
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
 		err(1, "Could not connect to %s", argv[1]);
 	init9p(srvfd);
-	_9pversion(8192);
+	msize = _9pversion(MSIZE);
+	fprintf(stderr, "msize is %d\n", msize);
 	memset(&rootfid, 0, sizeof(rootfid));
 	memset(&authfid, 0, sizeof(authfid));
 	authfid.fid = NOFID;
 	rootfid = *_9pattach(&rootfid, &authfid);
 	fprintf(stderr, "rootfid fid is %u\n", rootfid.fid);
 	fprintf(stderr, "rootfid qid is %llu\n", rootfid.qid.path);
-	tfid = fidclone(&rootfid);
-	fprintf(stderr, "Cloned fid is %u\n", tfid->fid);
-	fprintf(stderr, "Cloned qid is %llu\n", tfid->qid.path);
+	tfid = _9pwalkr(&rootfid, argv[2]);
+	fprintf(stderr, "Walked fid is %u\n", tfid->fid);
 	_9popen(tfid, OREAD);
-	fprintf(stderr, "after open, qid is %llu\n", tfid->qid.path);
-	n = _9pdirread(tfid, &d);
-	fprintf(stderr, "%d\n", n);
-	for(e = d; e < d + n; e++)
-		printf("%s\n", e->name);
+	fprintf(stderr, "Walked qid is %llu\n", tfid->qid.path);
+	fprintf(stderr, "Walked iounit is %d\n", tfid->iounit);
+
+	n = 0;
+	size = 18400;
+	while((r = _9pread(tfid, buf+n, (int*)&size)) > 0){
+		fprintf(stderr, "size is now %d\n", size);
+		fprintf(stderr, "and we just read %d bytes\n", r);
+		n += r;
+	}
+
+	write(1, buf, n);
 	_9pclunk(tfid);
 	close(srvfd);
 	exit(0);

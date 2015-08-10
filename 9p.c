@@ -311,7 +311,7 @@ _9pread(FFid *f, void *buf, int *n)
 	memset(&tread, 0, sizeof(tread));
 	tread.type = Tread;
 	tread.fid = f->fid;
-	tread.count = *n;
+	tread.count = *n < f->iounit ? *n : f->iounit;
 	tread.offset = f->offset;
 	if(do9p(&tread, &rread) == -1)
 		return -1;

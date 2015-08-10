@@ -69,11 +69,13 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 {
 	FFid		*f;
 	uint32_t	n, r;
+	int		s;
 
 	f = (FFid*)ffi->fh;
 	f->offset = off;
+	s = size;
 	n = 0;
-	while((r = _9pread(f, buf+n, (int*)&size)) > 0)
+	while((r = _9pread(f, buf+n, &s)) > 0)
 		n += r;
 	if(r < 0)
 		return -_9perrno;
@@ -121,6 +123,8 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
+	.open =		fsopen,
+	.read =		fsread,
 	.opendir = 	fsopendir,
 	.readdir = 	fsreaddir
 };

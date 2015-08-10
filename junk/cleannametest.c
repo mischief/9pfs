@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "libc.h"
+#include "../libc.h"
 
 int
 main(int argc, char *argv[])

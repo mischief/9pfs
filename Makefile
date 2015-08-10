@@ -25,14 +25,14 @@ install:	${TARG}
 ${TARG}:	${TARG}.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}
 
-9ptest: 	9ptest.o ${OBJS}
-	${CC} ${LDFLAGS} -o $@ 9ptest.o ${OBJS}
+9ptest: 	junk/9ptest.o ${OBJS}
+	${CC} ${LDFLAGS} -o $@ junk/9ptest.o ${OBJS}
 
-simplefuse:	simplefuse.o
-	${CC} ${LDFLAGS} -o $@ simplefuse.o ${LDADD}
+simplefuse:	junk/simplefuse.o
+	${CC} ${LDFLAGS} -o $@ junk/simplefuse.o ${LDADD}
 
-cleannametest:	cleannametest.o lib/cleanname.o
-	${CC} ${LDFLAGS} -o $@ cleannametest.o lib/cleanname.o
+cleannametest:	junk/cleannametest.o lib/cleanname.o
+	${CC} ${LDFLAGS} -o $@ junk/cleannametest.o lib/cleanname.o
 	
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<

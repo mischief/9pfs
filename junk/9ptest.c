@@ -12,9 +12,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include "libc.h"
-#include "fcall.h"
-#include "9pfs.h"
+#include "../libc.h"
+#include "../fcall.h"
+#include "../9pfs.h"
 
 enum
 {

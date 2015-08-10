@@ -40,7 +40,7 @@ fsgetattr(const char *path, struct stat *st)
 }
 
 int
-fsflush(const char *path, struct fuse_file_info *ffi)
+fsrelease(const char *path, struct fuse_file_info *ffi)
 {
 	return _9pclunk((FFid*)ffi->fh);
 }
@@ -126,7 +126,8 @@ struct fuse_operations fsops = {
 	.open =		fsopen,
 	.read =		fsread,
 	.opendir = 	fsopendir,
-	.readdir = 	fsreaddir
+	.readdir = 	fsreaddir,
+	.release =	fsrelease
 };
 
 int

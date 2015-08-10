@@ -3,6 +3,7 @@
 #include <sys/un.h>
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <fuse.h>
 #include <err.h>
 #include <errno.h>
@@ -15,6 +16,11 @@
 #include "libc.h"
 #include "fcall.h"
 #include "9pfs.h"
+
+enum
+{
+	MSIZE = 8192
+};
 
 void	usage(void);
 
@@ -36,8 +42,42 @@ fsgetattr(const char *path, struct stat *st)
 int
 fsflush(const char *path, struct fuse_file_info *ffi)
 {
-	if(_9pclunk((FFid*)ffi->fh) != 0)
-		err(1, "Could not flush");
+	return _9pclunk((FFid*)ffi->fh);
+}
+
+int
+fsopen(const char *path, struct fuse_file_info *ffi)
+{
+	FFid	*f;
+
+	if((f = hasfid(path)) == NULL)
+		f = _9pwalk(path);
+	else
+		f = fidclone(f);
+	if(f == NULL)
+		return -_9perrno;
+	f->mode = ffi->flags & O_ACCMODE;
+	if(_9popen(f, f->mode) == -1)
+		return -_9perrno;
+	ffi->fh = (uint64_t)f;
+	return 0;
+}
+
+int
+fsread(const char *path, char *buf, size_t size, off_t off,
+	struct fuse_file_info *ffi)
+{
+	FFid		*f;
+	uint32_t	n, r;
+
+	f = (FFid*)ffi->fh;
+	f->offset = off;
+	n = 0;
+	while((r = _9pread(f, buf+n, (int*)&size)) > 0)
+		n += r;
+	if(r < 0)
+		return -_9perrno;
+	return n;
 }
 
 int
@@ -51,7 +91,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 		f = fidclone(f);
 	if(f == NULL)
 		return -_9perrno;
-	f->mode = ffi->flags & 3;
+	f->mode = ffi->flags & O_ACCMODE;
 	if(_9popen(f, OREAD) == -1)
 		return -_9perrno;
 	if(!(f->qid.type & QTDIR))
@@ -105,7 +145,7 @@ main(int argc, char *argv[])
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
 		err(1, "Could not connect to %s", p9addr.sun_path);
 	init9p(srvfd);
-	_9pversion(8192);
+	_9pversion(MSIZE);
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	afid.fid = NOFID;

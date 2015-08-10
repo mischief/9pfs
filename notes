@@ -271,3 +271,16 @@ done with clunk
 Call: Tread on fid 1244383886
 
 so I don't know what that fid is.
+
+look at
+/usr/ports/pobj/sshfs-fuse-2.4/sshfs-fuse-2.4/sshfs.c:/^static int sshfs_open_common
+for stuff on handling access modes and open modes.
+
+So about making this faster.
+
+You have one thread that processes reading. Your main thread does a write
+and installs the tag in a hash table. The read function is just constantly
+reading and looks up the tag in the hash table and returns it to the
+correct thread.
+
+Is this faster?

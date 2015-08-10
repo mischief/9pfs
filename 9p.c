@@ -294,26 +294,29 @@ _9pdirread(FFid *f, Dir **d)
 {
 	uchar	buf[DIRMAX];
 	long	ts;
+	int	n;
 
-	ts = _9pread(f, buf, f->iounit, 0);
+	n = f->iounit;
+	ts = _9pread(f, buf, &n);
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
 	return ts;
 }
 
 long
-_9pread(FFid *f, void *buf, size_t n, off_t off)
+_9pread(FFid *f, void *buf, int *n)
 {
 	Fcall	tread, rread;
 
 	memset(&tread, 0, sizeof(tread));
 	tread.type = Tread;
 	tread.fid = f->fid;
-	tread.count = n;
-	tread.offset = off;
+	tread.count = *n;
+	tread.offset = f->offset;
 	if(do9p(&tread, &rread) == -1)
 		return -1;
-	f->offset = rread.count + off;
+	*n -= rread.count;
+	f->offset += rread.count;
 	memcpy(buf, rread.data, rread.count);
 	return rread.count;
 }
@@ -384,9 +387,9 @@ int
 str2int(const char *s)
 {
 	int		hash;
-	const char 	*c;
+	u_char	 	*c;
 
-	for(c = s, hash = 0; *c != '\0'; c++)
+	for(c = (u_char*)s, hash = 0; *c != '\0'; c++)
 		hash += hash * 31 + *c;
 	return hash >= 0 ? hash : -hash;
 }

@@ -22,6 +22,8 @@ enum
 	MSIZE = 8192
 };
 
+Ffid	*rfid;
+
 void	usage(void);
 
 int
@@ -84,17 +86,20 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 		}
 		if(_9popen(f, ffi->flags & O_ACCMODE) == -1)
 			return -EIO;
-		ffi->fh = (uint64_t)f;
-		return 0;
+	}else{
+		dpath = cleanname(estrdup(path));
+		if((name = strrchr(dpath, '/')) == dpath){
+			f = rfid;
+			name++;
+		}else{
+			*name++ = '\0';
+			if((f = hasfid(dpath)) == NULL)
+				f = _9pwalk(dpath);
+			f = _9pcreate(f, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
+		}
+		if(f == NULL)
+			return -EIO;
 	}
-	dpath = estrdup(path);
-	name = strrchr(dpath, '/');
-	*name++ = '\0';
-	if((f = hasfid(dpath)) == NULL)
-		f = _9pwalk(dpath);
-	f = _9pcreate(f, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
-	if(f == NULL)
-		return -EIO;
 	ffi->fh = (uint64_t)f;
 	return 0;
 }
@@ -195,7 +200,7 @@ struct fuse_operations fsops = {
 int
 main(int argc, char *argv[])
 {
-	FFid			rfid, afid;
+	FFid			afid;
 	struct sockaddr_un	p9addr;
 	char			*s, *end, *argv0;
 	int			srvfd;
@@ -216,7 +221,7 @@ main(int argc, char *argv[])
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	afid.fid = NOFID;
-	rfid = *_9pattach(&rfid, &afid);
+	rfid = _9pattach(&rfid, &afid);
 	fuse_main(argc, argv, &fsops, NULL);
 	exit(0);
 }

@@ -129,7 +129,7 @@ _9pattach(FFid* ffid, FFid *afid)
 	if(do9p(&tattach, &rattach) != 0)
 		errx(1, "Could not attach");
 	f = lookup(ffid->fid, PUT);
-	if(addfid("/", f) == -1)
+	if(pathfid("/", f, PUT) != f)
 		errx(1, "Reused fid");
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
@@ -180,7 +180,7 @@ _9pwalk(const char *path)
 	if(strcmp(buf, "/") == 0)
 		return rootfid;
 	if((f = _9pwalkr(rootfid, buf+1)) != NULL)
-		addfid((const char*)cleanname, f);
+		pathfid((const char*)cleanpath, f, PUT);
 	free(buf);
 	return f;
 }
@@ -223,6 +223,27 @@ _9pstat(FFid *f, struct stat *s)
 	return 0;
 }
 
+FFid*
+_9pcreate(FFid *d, char *name, int perm, int mode, char *path)
+{
+	FFid	*f;
+	Fcall	tcreate, rcreate;
+
+
+	memset(&tcreate, 0, sizeof(tcreate));
+	tcreate.type = Tcreate;
+	tcreate.fid = d->fid;
+	tcreate.name = path;
+	tcreate.perm = perm;
+	tcreate.mode = mode;
+	if(do9p(&tcreate, &rcreate) == -1)
+		return -1;
+	if(d->path)
+		pathfid(path, d, DEL)
+	pathfid(path, d, PUT);
+	return d;
+}
+	
 int
 _9popen(FFid *f, char mode)
 {
@@ -410,8 +431,8 @@ str2int(const char *s)
 	return hash >= 0 ? hash : -hash;
 }
 
-int
-addfid(const char *path, FFid *f)
+FFid*
+pathfid(const char *path, FFid *f, int act)
 {
 	FFid	**floc;
 	char	*s;
@@ -423,28 +444,32 @@ addfid(const char *path, FFid *f)
 		if(strcmp(s, (*floc)->path) == 0)
 			break;
 	}
-	if(*floc != NULL)
-		return -1;
-	*floc = f;
-	f->path = s;
-	return 0;
+	switch(act){
+	case GET:
+		free(s);
+		f = *floc;
+		break;
+	case PUT:
+		if(*floc != NULL)
+			return *floc;
+		*floc = f;
+		f->path = s;
+		break;
+	case DEL:
+		if(*floc == NULL || f != *FLOC)
+			return NULL;
+		*floc = (*floc)->link;
+		free(f->path);
+		f->path = NULL;
+		break;
+	}
+	return f;
 }
 
 FFid*
 hasfid(const char *path)
 {
-	FFid	*f;
-	char	*s;
-	int	h;
-
-	s = cleanname(estrdup(path));
-	h = str2int(s);
-	for(f = pathhash[h % NHASH]; f != NULL; f = f->link){
-		if(strcmp(s, f->path) == 0)
-			break;
-	}
-	free(s);
-	return f;
+	return pathfid(path, NULL, GET);
 }
 
 FFid*

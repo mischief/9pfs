@@ -23,6 +23,7 @@ FFid	*_9pwalkr(FFid*, char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, char);
+FFid	*_9pcreate(FFid*, char*, int, int);
 u32int	_9pread(FFid*, void*, int*);
 u32int	_9pwrite(FFid*, void*, int*);
 u32int	_9pdirread(FFid*, Dir**);

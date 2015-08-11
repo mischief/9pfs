@@ -32,8 +32,10 @@ fsgetattr(const char *path, struct stat *st)
 
 	if((f = hasfid(path)) == NULL)
 		f = _9pwalk(path);
-	if(f == NULL)
-		return -_9perrno;
+	if(f == NULL){
+		errno = ENOENT;
+		return -1;
+	}
 	r = _9pstat(f, st);
 	_9pclunk(f);
 	return r;
@@ -50,15 +52,49 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	if((f = hasfid(path)) == NULL)
-		f = _9pwalk(path);
-	else
+	if((f = hasfid(path)) != NULL)
 		f = fidclone(f);
-	if(f == NULL)
-		return -_9perrno;
+	else
+		f = _9pwalk(path);
+	if(f == NULL){
+		errno = ENOENT;
+		return -1;
+	}
 	f->mode = ffi->flags & O_ACCMODE;
 	if(_9popen(f, f->mode) == -1)
-		return -_9perrno;
+		return -1;
+	ffi->fh = (uint64_t)f;
+	return 0;
+}
+
+int
+fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
+{
+	FFid	*f;
+	char	*name, *dpath;
+
+	if((f = hasfid(path)) != NULL)
+		f = fidclone(f);
+	else
+		f = _9pwalk(path);
+	if(f != NULL){
+		if(ffi->flags | O_EXCL){
+			_9pclunk(f);
+			return -EEXIST;
+		}
+		if(_9popen(f, ffi->flags & O_ACCMODE) == -1)
+			return -EIO;
+		ffi->fh = (uint64_t)f;
+		return 0;
+	}
+	dpath = estrdup(path);
+	name = strrchr(dpath, '/');
+	*name++ = '\0';
+	if((f = hasfid(dpath)) == NULL)
+		f = _9pwalk(dpath);
+	f = _9pcreate(f, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
+	if(f == NULL)
+		return -EIO;
 	ffi->fh = (uint64_t)f;
 	return 0;
 }
@@ -81,7 +117,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 		n += r;
 	}
 	if(r < 0)
-		return -_9perrno;
+		return -EIO;
 	return n;
 }
 
@@ -103,7 +139,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 		n += r;
 	}
 	if(r < 0)
-		return -1;
+		return -EIO;
 	return n;
 }
 
@@ -120,7 +156,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 		return -_9perrno;
 	f->mode = ffi->flags & O_ACCMODE;
 	if(_9popen(f, OREAD) == -1)
-		return -_9perrno;
+		return -EIO;
 	if(!(f->qid.type & QTDIR))
 		return -ENOTDIR;
 	ffi->fh = (uint64_t)f;

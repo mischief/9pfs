@@ -5,7 +5,7 @@ struct FFid
 {
 	FFid	*link;
 	FFid	*pathlink;
-	int	mode;
+	uchar	mode;
 	u32int	fid;
 	Qid	qid;
 	u32int	iounit;

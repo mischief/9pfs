@@ -63,6 +63,8 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		return -1;
 	}
 	f->mode = ffi->flags & O_ACCMODE;
+	if(ffi->flags & O_TRUNC)
+		f->mode |= OTRUNC;
 	if(_9popen(f, f->mode) == -1){
 		_9pclunk(f);
 		return -EIO;
@@ -77,6 +79,7 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 	FFid	*f, *d;
 	char	*name, *dpath;
 
+	fprintf(stderr, "calling fscreate with path %s\n", path);
 	if((f = hasfid(path)) != NULL)
 		f = fidclone(f);
 	else
@@ -108,6 +111,13 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 		addfid(cleanname(estrdup(path)), f);
 	}
 	ffi->fh = (uint64_t)f;
+	return 0;
+}
+
+int
+fsmknod(const char *path, mode_t mode, dev_t dev)
+{
+	fprintf(stderr, "trying to call fsmknod\n");
 	return 0;
 }
 
@@ -200,6 +210,7 @@ struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
 	.open =		fsopen,
 	.create =	fscreate,
+	.mknod =	fsmknod,
 	.read =		fsread,
 	.write =	fswrite,
 	.opendir = 	fsopendir,
@@ -215,6 +226,8 @@ main(int argc, char *argv[])
 	char			*s, *end, *argv0;
 	int			srvfd;
 
+	if(argc != 3)
+		usage();
 	argv0 = *argv++;
 	argc--;
 	memset(&p9addr, 0, sizeof(p9addr));

@@ -72,13 +72,38 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	int		s;
 
 	f = (FFid*)ffi->fh;
+	if(f->mode & O_WRONLY)
+		return -EACCES;
 	f->offset = off;
 	s = size;
 	n = 0;
-	while((r = _9pread(f, buf+n, &s)) > 0)
+	while((r = _9pread(f, buf+n, &s)) > 0){
 		n += r;
+	}
 	if(r < 0)
 		return -_9perrno;
+	return n;
+}
+
+int
+fswrite(const char *path, const char *buf, size_t size, off_t off,
+	struct fuse_file_info *ffi)
+{
+	FFid	*f;
+	uint32_t	n, r;
+	int		s;
+
+	f = (FFid*)ffi->fh;
+	if(f->mode & O_RDONLY)
+		return -EACCES;
+	f->offset = off;
+	s = size;
+	n = 0;
+	while((r = _9pwrite(f, (char*)buf+n, &s)) > 0){
+		n += r;
+	}
+	if(r < 0)
+		return -1;
 	return n;
 }
 
@@ -125,6 +150,7 @@ struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
 	.open =		fsopen,
 	.read =		fsread,
+	.write =	fswrite,
 	.opendir = 	fsopendir,
 	.readdir = 	fsreaddir,
 	.release =	fsrelease

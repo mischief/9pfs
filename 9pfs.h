@@ -3,28 +3,29 @@ typedef struct PFid 	PFid;
 
 struct FFid
 {
-	FFid		*link;
-	FFid		*pathlink;
-	FFid		*from;
-	int		mode;
-	uint32_t	fid;
-	Qid		qid;
-	uint32_t	iounit;
-	off_t		offset;
-	char		*path;
+	FFid	*link;
+	FFid	*pathlink;
+	FFid	*from;
+	int	mode;
+	u32int	fid;
+	Qid	qid;
+	u32int	iounit;
+	u64int	offset;
+	char	*path;
 };
 
 int	_9perrno;
 
-int	_9pversion(uint32_t);
+int	_9pversion(u32int);
 FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
 FFid	*_9pwalkr(FFid*, char*);
 int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, char);
-long	_9pread(FFid*, void*, int*);
-long	_9pdirread(FFid*, Dir**);
+u32int	_9pread(FFid*, void*, int*);
+u32int	_9pwrite(FFid*, void*, int*);
+u32int	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);
 

@@ -239,9 +239,8 @@ _9popen(FFid *f, char mode)
 	return 0;
 }
 
-static
-long
-dirpackage(uchar *buf, long ts, Dir **d)
+u32int
+dirpackage(uchar *buf, u32int ts, Dir **d)
 {
 	char *s;
 	long ss, i, n, nn, m;
@@ -289,12 +288,11 @@ dirpackage(uchar *buf, long ts, Dir **d)
 	return nn;
 }
 
-long
+u32int
 _9pdirread(FFid *f, Dir **d)
 {
 	uchar	buf[DIRMAX];
-	long	ts;
-	int	n;
+	u32int	ts, n;
 
 	n = f->iounit;
 	ts = _9pread(f, buf, &n);
@@ -303,7 +301,7 @@ _9pdirread(FFid *f, Dir **d)
 	return ts;
 }
 
-long
+u32int
 _9pread(FFid *f, void *buf, int *n)
 {
 	Fcall	tread, rread;
@@ -311,14 +309,32 @@ _9pread(FFid *f, void *buf, int *n)
 	memset(&tread, 0, sizeof(tread));
 	tread.type = Tread;
 	tread.fid = f->fid;
-	tread.count = *n < f->iounit ? *n : f->iounit;
 	tread.offset = f->offset;
+	tread.count = *n < f->iounit ? *n : f->iounit;
 	if(do9p(&tread, &rread) == -1)
 		return -1;
 	*n -= rread.count;
 	f->offset += rread.count;
 	memcpy(buf, rread.data, rread.count);
 	return rread.count;
+}
+
+u32int
+_9pwrite(FFid *f, void *buf, int *n)
+{
+	Fcall	twrite, rwrite;
+
+	memset(&twrite, 0, sizeof(twrite));
+	twrite.type = Twrite;
+	twrite.fid = f->fid;
+	twrite.offset = f->offset;
+	twrite.count = *n < f->iounit ? *n : f->iounit;
+	twrite.data = buf;
+	if(do9p(&twrite, &rwrite) == -1)
+		return -1;
+	*n -= rwrite.count;
+	f->offset += rwrite.count;
+	return rwrite.count;
 }
 
 int

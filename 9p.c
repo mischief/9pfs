@@ -179,9 +179,9 @@ _9pwalk(const char *path)
 	buf = estrdup(cleanname(cleanpath));
 	if(strcmp(buf, "/") == 0)
 		return rootfid;
-	f = _9pwalkr(rootfid, buf+1);
+	if((f = _9pwalkr(rootfid, buf+1)) != NULL)
+		addfid((const char*)cleanname, f);
 	free(buf);
-	addfid((const char*)cleanname, f);
 	return f;
 }
 

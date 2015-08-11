@@ -103,7 +103,6 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 	FFid	*f, *d;
 	char	*name, *dpath;
 
-	fprintf(stderr, "calling fscreate with path %s\n", path);
 	if((f = hasfid(path)) != NULL)
 		f = fidclone(f);
 	else
@@ -135,13 +134,6 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 		addfid(cleanname(estrdup(path)), f);
 	}
 	ffi->fh = (uint64_t)f;
-	return 0;
-}
-
-int
-fsmknod(const char *path, mode_t mode, dev_t dev)
-{
-	fprintf(stderr, "trying to call fsmknod\n");
 	return 0;
 }
 
@@ -236,7 +228,6 @@ struct fuse_operations fsops = {
 	.truncate =	fstruncate,
 	.open =		fsopen,
 	.create =	fscreate,
-	.mknod =	fsmknod,
 	.read =		fsread,
 	.write =	fswrite,
 	.opendir = 	fsopendir,

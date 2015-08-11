@@ -129,7 +129,7 @@ _9pattach(FFid* ffid, FFid *afid)
 	if(do9p(&tattach, &rattach) != 0)
 		errx(1, "Could not attach");
 	f = lookup(ffid->fid, PUT);
-	if(pathfid("/", f, PUT) != f)
+	if(addfid("/", f) == -1)
 		errx(1, "Reused fid");
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
@@ -142,30 +142,29 @@ _9pwalkr(FFid *r, char *path)
 {
 	FFid	*f;
 	Fcall	twalk, rwalk;
-	char	**s;
+	char	**s, *buf, *bp;
 
+	buf = bp = estrdup(path);
 	memset(&twalk, 0, sizeof(twalk));
 	f = NULL;
 	twalk.type = Twalk;
 	twalk.newfid = r->fid;
-	while(path != NULL){
-		for(s = twalk.wname; s < twalk.wname + MAXWELEM && path != NULL; s++)
-			*s = strsep(&path, "/");
+	while(buf != NULL){
+		for(s = twalk.wname; s < twalk.wname + MAXWELEM && buf != NULL; s++)
+			*s = strsep(&buf, "/");
 		_9pclunk(f);
 		twalk.fid = twalk.newfid;
 		f = uniqfid();
 		twalk.newfid = f->fid;
 		twalk.nwname = s - twalk.wname;
-		if(do9p(&twalk, &rwalk) == -1)
-			return NULL;
-		if(rwalk.nwqid < twalk.nwname){
+		if(do9p(&twalk, &rwalk) == -1 || rwalk.nwqid < twalk.nwname){
 			lookup(f->fid, DEL);
-			_9perrno = ENOENT;
+			free(bp);
 			return NULL;
 		}
 	}
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
-	f->from = r;
+	free(bp);
 	return f;
 }
 
@@ -173,15 +172,15 @@ FFid*
 _9pwalk(const char *path)
 {
 	FFid	*f;
-	char	*buf, *cleanpath;
+	char	*cleanpath;
 
-	cleanpath = estrdup(path);
-	buf = estrdup(cleanname(cleanpath));
-	if(strcmp(buf, "/") == 0)
+	cleanpath = cleanname(estrdup(path));
+	if(strcmp(cleanpath, "/") == 0){
+		free(cleanpath);
 		return rootfid;
-	if((f = _9pwalkr(rootfid, buf+1)) != NULL)
-		pathfid((const char*)cleanpath, f, PUT);
-	free(buf);
+	}
+	if((f = _9pwalkr(rootfid, cleanpath+1)) != NULL)
+		addfid((const char*)cleanpath, f);
 	return f;
 }
 
@@ -223,27 +222,6 @@ _9pstat(FFid *f, struct stat *s)
 	return 0;
 }
 
-FFid*
-_9pcreate(FFid *d, char *name, int perm, int mode, char *path)
-{
-	FFid	*f;
-	Fcall	tcreate, rcreate;
-
-
-	memset(&tcreate, 0, sizeof(tcreate));
-	tcreate.type = Tcreate;
-	tcreate.fid = d->fid;
-	tcreate.name = path;
-	tcreate.perm = perm;
-	tcreate.mode = mode;
-	if(do9p(&tcreate, &rcreate) == -1)
-		return -1;
-	if(d->path)
-		pathfid(path, d, DEL)
-	pathfid(path, d, PUT);
-	return d;
-}
-	
 int
 _9popen(FFid *f, char mode)
 {
@@ -258,6 +236,28 @@ _9popen(FFid *f, char mode)
 	f->qid = ropen.qid;
 	f->iounit = ropen.iounit;
 	return 0;
+}
+
+FFid*
+_9pcreate(FFid *d, char *name, int perm, int mode)
+{
+	FFid	*f;
+	Fcall	tcreate, rcreate;
+
+	f = fidclone(d);
+	memset(&tcreate, 0, sizeof(tcreate));
+	tcreate.type = Tcreate;
+	tcreate.fid = f->fid;
+	tcreate.name = name;
+	tcreate.perm = perm;
+	tcreate.mode = mode;
+	if(do9p(&tcreate, &rcreate) == -1){
+		_9pclunk(f);
+		return NULL;
+	}
+	f->iounit = rcreate.iounit;
+	f->qid = rcreate.qid;
+	return d;
 }
 
 u32int
@@ -323,7 +323,7 @@ _9pdirread(FFid *f, Dir **d)
 }
 
 u32int
-_9pread(FFid *f, void *buf, int *n)
+_9pread(FFid *f, void *buf, u32int *n)
 {
 	Fcall	tread, rread;
 
@@ -341,7 +341,7 @@ _9pread(FFid *f, void *buf, int *n)
 }
 
 u32int
-_9pwrite(FFid *f, void *buf, int *n)
+_9pwrite(FFid *f, void *buf, u32int *n)
 {
 	Fcall	twrite, rwrite;
 
@@ -431,8 +431,8 @@ str2int(const char *s)
 	return hash >= 0 ? hash : -hash;
 }
 
-FFid*
-pathfid(const char *path, FFid *f, int act)
+int
+addfid(const char *path, FFid *f)
 {
 	FFid	**floc;
 	char	*s;
@@ -444,32 +444,28 @@ pathfid(const char *path, FFid *f, int act)
 		if(strcmp(s, (*floc)->path) == 0)
 			break;
 	}
-	switch(act){
-	case GET:
-		free(s);
-		f = *floc;
-		break;
-	case PUT:
-		if(*floc != NULL)
-			return *floc;
-		*floc = f;
-		f->path = s;
-		break;
-	case DEL:
-		if(*floc == NULL || f != *FLOC)
-			return NULL;
-		*floc = (*floc)->link;
-		free(f->path);
-		f->path = NULL;
-		break;
-	}
-	return f;
+	if(*floc != NULL)
+		return -1;
+	*floc = f;
+	f->path = s;
+	return 0;
 }
 
 FFid*
 hasfid(const char *path)
 {
-	return pathfid(path, NULL, GET);
+	FFid	*f;
+	char	*s;
+	int	h;
+
+	s = cleanname(estrdup(path));
+	h = str2int(s);
+	for(f = pathhash[h % NHASH]; f != NULL; f = f->link){
+		if(strcmp(s, f->path) == 0)
+			break;
+	}
+	free(s);
+	return f;
 }
 
 FFid*
@@ -478,10 +474,10 @@ fidclone(FFid *f)
 	Fcall	twalk, rwalk;
 	FFid	*newf;
 
+	newf = uniqfid();
 	memset(&twalk, 0, sizeof(twalk));
 	twalk.type = Twalk;
 	twalk.fid = f->fid;
-	newf = uniqfid();
 	twalk.newfid = newf->fid;
 	twalk.nwname = 0;
 	if(do9p(&twalk, &rwalk) != 0)

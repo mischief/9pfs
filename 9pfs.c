@@ -22,7 +22,7 @@ enum
 	MSIZE = 8192
 };
 
-Ffid	*rfid;
+FFid	*rootfid;
 
 void	usage(void);
 
@@ -63,8 +63,10 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		return -1;
 	}
 	f->mode = ffi->flags & O_ACCMODE;
-	if(_9popen(f, f->mode) == -1)
-		return -1;
+	if(_9popen(f, f->mode) == -1){
+		_9pclunk(f);
+		return -EIO;
+	}
 	ffi->fh = (uint64_t)f;
 	return 0;
 }
@@ -72,7 +74,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 int
 fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 {
-	FFid	*f;
+	FFid	*f, *d;
 	char	*name, *dpath;
 
 	if((f = hasfid(path)) != NULL)
@@ -84,21 +86,26 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			_9pclunk(f);
 			return -EEXIST;
 		}
-		if(_9popen(f, ffi->flags & O_ACCMODE) == -1)
+		if(_9popen(f, ffi->flags & O_ACCMODE) == -1){
+			_9pclunk(f);
 			return -EIO;
+		}
 	}else{
 		dpath = cleanname(estrdup(path));
 		if((name = strrchr(dpath, '/')) == dpath){
-			f = rfid;
+			d = rootfid;
 			name++;
 		}else{
 			*name++ = '\0';
-			if((f = hasfid(dpath)) == NULL)
-				f = _9pwalk(dpath);
-			f = _9pcreate(f, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
+			if((d = hasfid(dpath)) == NULL)
+				d = _9pwalk(dpath);
+			if(d == NULL)
+				return -EIO;
 		}
+		f = _9pcreate(d, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
 		if(f == NULL)
 			return -EIO;
+		addfid(cleanname(estrdup(path)), f);
 	}
 	ffi->fh = (uint64_t)f;
 	return 0;
@@ -110,7 +117,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 {
 	FFid		*f;
 	uint32_t	n, r;
-	int		s;
+	u32int		s;
 
 	f = (FFid*)ffi->fh;
 	if(f->mode & O_WRONLY)
@@ -131,8 +138,8 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	uint32_t	n, r;
-	int		s;
+	u32int	n, r;
+	u32int	s;
 
 	f = (FFid*)ffi->fh;
 	if(f->mode & O_RDONLY)
@@ -160,8 +167,10 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	if(f == NULL)
 		return -_9perrno;
 	f->mode = ffi->flags & O_ACCMODE;
-	if(_9popen(f, OREAD) == -1)
+	if(_9popen(f, OREAD) == -1){
+		_9pclunk(f);
 		return -EIO;
+	}
 	if(!(f->qid.type & QTDIR))
 		return -ENOTDIR;
 	ffi->fh = (uint64_t)f;
@@ -190,6 +199,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
 	.open =		fsopen,
+	.create =	fscreate,
 	.read =		fsread,
 	.write =	fswrite,
 	.opendir = 	fsopendir,
@@ -200,7 +210,7 @@ struct fuse_operations fsops = {
 int
 main(int argc, char *argv[])
 {
-	FFid			afid;
+	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
 	char			*s, *end, *argv0;
 	int			srvfd;
@@ -221,7 +231,7 @@ main(int argc, char *argv[])
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	afid.fid = NOFID;
-	rfid = _9pattach(&rfid, &afid);
+	rootfid = _9pattach(&rfid, &afid);
 	fuse_main(argc, argv, &fsops, NULL);
 	exit(0);
 }

@@ -5,7 +5,6 @@ struct FFid
 {
 	FFid	*link;
 	FFid	*pathlink;
-	FFid	*from;
 	int	mode;
 	u32int	fid;
 	Qid	qid;
@@ -24,8 +23,8 @@ int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*, char);
 FFid	*_9pcreate(FFid*, char*, int, int);
-u32int	_9pread(FFid*, void*, int*);
-u32int	_9pwrite(FFid*, void*, int*);
+u32int	_9pread(FFid*, void*, u32int*);
+u32int	_9pwrite(FFid*, void*, u32int*);
 u32int	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);

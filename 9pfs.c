@@ -44,11 +44,37 @@ fsgetattr(const char *path, struct stat *st)
 }
 
 int
+fsfgetattr(const char *path, struct stat *st, struct fuse_file_info *ffi)
+{
+	return _9pstat((FFid*)ffi->fh, st);
+}
+
+int
 fsrelease(const char *path, struct fuse_file_info *ffi)
 {
 	return _9pclunk((FFid*)ffi->fh);
 }
 
+int
+fstruncate(const char *path, off_t off)
+{
+	FFid	*f;
+
+	if((f = hasfid(path)) != NULL)
+		f = fidclone(f);
+	else
+		f = _9pwalk(path);
+	if(f == NULL)
+		errno = ENOENT;
+	f->mode = OWRITE | OTRUNC;
+	if(_9popen(f, f->mode) == -1){
+		_9pclunk(f);
+		return -EIO;
+	}
+	_9pclunk(f);
+	return 0;
+}
+	
 int
 fsopen(const char *path, struct fuse_file_info *ffi)
 {
@@ -58,10 +84,8 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		f = fidclone(f);
 	else
 		f = _9pwalk(path);
-	if(f == NULL){
-		errno = ENOENT;
-		return -1;
-	}
+	if(f == NULL)
+		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
 	if(ffi->flags & O_TRUNC)
 		f->mode |= OTRUNC;
@@ -208,6 +232,8 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
+	.fgetattr =	fsfgetattr,
+	.truncate =	fstruncate,
 	.open =		fsopen,
 	.create =	fscreate,
 	.mknod =	fsmknod,

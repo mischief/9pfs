@@ -374,11 +374,11 @@ _9pclunk(FFid *f)
 
 	if(f == NULL)
 		return 0;
-	if(lookup(f->fid, DEL) != FDEL)
-		return -1;
 	memset(&tclunk, 0, sizeof(tclunk));
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
+	if(lookup(f->fid, DEL) != FDEL)
+		return -1;
 	do9p(&tclunk, &rclunk);
 	return 0;
 }

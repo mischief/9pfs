@@ -85,7 +85,7 @@ do9p(Fcall *t, Fcall *r)
 		errx(1, "Bad 9p read");
 	convM2S(rbuf, n, r);
 	if(r->tag != t->tag || r->type == Rerror || r->type != t->type+1)
-		err(1, "do9p error");
+		errx(1, "do9p error");
 	return 0;
 }
 	

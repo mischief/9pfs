@@ -32,11 +32,7 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	int	r;
 
-	if((f = hasfid(path)) != NULL)
-		f = fidclone(f);
-	else
-		f = _9pwalk(path);
-	if(f == NULL)
+	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	r = _9pstat(f, st);
 	_9pclunk(f);
@@ -54,11 +50,7 @@ fstruncate(const char *path, off_t off)
 {
 	FFid	*f;
 
-	if((f = hasfid(path)) != NULL)
-		f = fidclone(f);
-	else
-		f = _9pwalk(path);
-	if(f == NULL)
+	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = OWRITE | OTRUNC;
 	if(_9popen(f) == -1){
@@ -75,11 +67,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 	FFid	*f;
 
 	fprintf(logfile, "fsopen on %s\n", path);
-	if((f = hasfid(path)) != NULL)
-		f = fidclone(f);
-	else
-		f = _9pwalk(path);
-	if(f == NULL)
+	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
 	if(ffi->flags & O_TRUNC)
@@ -93,16 +81,28 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 }
 
 int
-fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
+fscreate(const char *path, mode_t perms, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 	char	*name, *dpath;
 
-	if((f = hasfid(path)) != NULL)
-		f = fidclone(f);
-	else
-		f = _9pwalk(path);
-	if(f != NULL){
+	if((f = _9pwalk(path)) == NULL){
+		dpath = cleanname(estrdup(path));
+		if((name = strrchr(dpath, '/')) == dpath){
+			name++;
+			f = fidclone(rootfid);
+		}else{
+			*name++ = '\0';
+			f = _9pwalk(dpath);
+		}
+		if(f == NULL)
+			return -EIO;
+		fprintf(logfile, "fscreate with perms %o and access %o\n", perms, ffi->flags&O_ACCMODE);
+		f->mode = ffi->flags & O_ACCMODE;
+		f = _9pcreate(f, name, perms);
+		if(f == NULL)
+			return -EIO;
+	}else{
 		if(ffi->flags | O_EXCL){
 			_9pclunk(f);
 			return -EEXIST;
@@ -112,23 +112,6 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			_9pclunk(f);
 			return -EIO;
 		}
-	}else{
-		dpath = cleanname(estrdup(path));
-		if((name = strrchr(dpath, '/')) == dpath){
-			name++;
-			f = fidclone(rootfid);
-		}else{
-			*name++ = '\0';
-			if((f = hasfid(dpath)) == NULL)
-				f = _9pwalk(dpath);
-		}
-		if(f == NULL)
-			return -EIO;
-		fprintf(logfile, "fscreate with mode %o and access %o\n", mode, ffi->flags&O_ACCMODE);
-		f->mode = ffi->flags & O_ACCMODE;
-		f = _9pcreate(f, name, mode);
-		if(f == NULL)
-			return -EIO;
 	}
 	ffi->fh = (u64int)f;
 	return 0;
@@ -184,11 +167,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid		*f;
 
-	if((f = hasfid(path)) == NULL)
-		f = _9pwalk(path);
-	else
-		f = fidclone(f);
-	if(f == NULL)
+	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
 	if(_9popen(f) == -1){

@@ -85,12 +85,16 @@ do9p(Fcall *t, Fcall *r)
 		errx(1, "Bad 9p read");
 	convM2S(rbuf, n, r);
 	if(r->tag != t->tag || r->type == Rerror || r->type != t->type+1){
-		if(r->tag != t->tag)
+		if(r->tag != t->tag){
 			fprintf(logfile, "Tag mismatch\n");
+			fprintf(logfile, "Expected %d got %d\n", t->tag, r->tag);
+		}
 		if(r->type == Rerror)
-			fprintf(logfile, "Rerror\n");
-		if(r->type != t->type+1)
+			fprintf(logfile, "Rerror: %s\n", r->ename);
+		if(r->type != t->type+1){
 			fprintf(logfile, "Type mismatch\n");
+			fprintf(logfile, "Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
+		}
 		errx(1, "do9p error");
 	}
 	return 0;
@@ -136,8 +140,7 @@ _9pattach(FFid* ffid, FFid *afid)
 	if(do9p(&tattach, &rattach) != 0)
 		errx(1, "Could not attach");
 	f = lookup(ffid->fid, PUT);
-	if(addfid("/", f) == -1)
-		errx(1, "Reused fid");
+	f->path = "/";
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
 	rootfid = f;
@@ -184,12 +187,10 @@ _9pwalk(const char *path)
 	cleanpath = cleanname(estrdup(path));
 	if(strcmp(cleanpath, "/") == 0){
 		free(cleanpath);
-		return rootfid;
+		return fidclone(rootfid);
 	}
-	if((f = _9pwalkr(rootfid, cleanpath+1)) != NULL){
-		if(addfid(cleanpath, f) == -1)
-			free(cleanpath);
-	}
+	if((f = _9pwalkr(rootfid, cleanpath+1)) != NULL)
+		f->path = cleanpath;
 	return f;
 }
 
@@ -417,10 +418,12 @@ lookup(uint32_t fid, int act)
 		*floc = f;
 		break;
 	case DEL:
-		if(*floc == NULL || (*floc)->path != NULL)
-			return *floc;
+		if(*floc == NULL || *floc == rootfid)
+			return NULL;
 		f = *floc;
 		*floc = (*floc)->link;
+		if(f->path != NULL)
+			free(f->path);
 		free(f);
 		f = FDEL;
 		break;

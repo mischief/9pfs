@@ -30,8 +30,6 @@ u32int	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);
 
-FFid	*hasfid(const char*);
-int	addfid(char*, FFid*);
 FFid	*fidclone(FFid*);
 
 void	*emalloc(size_t);

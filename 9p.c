@@ -442,41 +442,6 @@ str2int(const char *s)
 	return hash >= 0 ? hash : -hash;
 }
 
-int
-addfid(char *path, FFid *f)
-{
-	FFid	**floc;
-	int	h;
-
-	h = str2int(path);
-	for(floc = pathhash + h % NHASH; *floc != NULL; floc = &(*floc)->pathlink){
-		if(strcmp(path, (*floc)->path) == 0)
-			break;
-	}
-	if(*floc != NULL)
-		return -1;
-	*floc = f;
-	f->path = path;
-	return 0;
-}
-
-FFid*
-hasfid(const char *path)
-{
-	FFid	*f;
-	char	*s;
-	int	h;
-
-	s = cleanname(estrdup(path));
-	h = str2int(s);
-	for(f = pathhash[h % NHASH]; f != NULL; f = f->link){
-		if(strcmp(s, f->path) == 0)
-			break;
-	}
-	free(s);
-	return f;
-}
-
 FFid*
 fidclone(FFid *f)
 {

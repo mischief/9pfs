@@ -61,7 +61,7 @@ fstruncate(const char *path, off_t off)
 	if(f == NULL)
 		return -ENOENT;
 	f->mode = OWRITE | OTRUNC;
-	if(_9popen(f, f->mode) == -1){
+	if(_9popen(f) == -1){
 		_9pclunk(f);
 		return -EIO;
 	}
@@ -74,6 +74,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
+	fprintf(logfile, "fsopen on %s\n", path);
 	if((f = hasfid(path)) != NULL)
 		f = fidclone(f);
 	else
@@ -83,7 +84,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 	f->mode = ffi->flags & O_ACCMODE;
 	if(ffi->flags & O_TRUNC)
 		f->mode |= OTRUNC;
-	if(_9popen(f, f->mode) == -1){
+	if(_9popen(f) == -1){
 		_9pclunk(f);
 		return -EIO;
 	}
@@ -94,7 +95,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 int
 fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 {
-	FFid	*f, *d;
+	FFid	*f;
 	char	*name, *dpath;
 
 	if((f = hasfid(path)) != NULL)
@@ -106,28 +107,30 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			_9pclunk(f);
 			return -EEXIST;
 		}
-		if(_9popen(f, ffi->flags & O_ACCMODE) == -1){
+		f->mode = ffi->flags & O_ACCMODE;
+		if(_9popen(f) == -1){
 			_9pclunk(f);
 			return -EIO;
 		}
 	}else{
 		dpath = cleanname(estrdup(path));
 		if((name = strrchr(dpath, '/')) == dpath){
-			d = rootfid;
 			name++;
+			f = fidclone(rootfid);
 		}else{
 			*name++ = '\0';
-			if((d = hasfid(dpath)) == NULL)
-				d = _9pwalk(dpath);
-			if(d == NULL)
-				return -EIO;
+			if((f = hasfid(dpath)) == NULL)
+				f = _9pwalk(dpath);
 		}
-		f = _9pcreate(d, name, mode & 0777, ffi->flags & O_ACCMODE);
 		if(f == NULL)
 			return -EIO;
-		addfid(cleanname(estrdup(path)), f);
+		fprintf(logfile, "fscreate with mode %o and access %o\n", mode, ffi->flags&O_ACCMODE);
+		f->mode = ffi->flags & O_ACCMODE;
+		f = _9pcreate(f, name, mode);
+		if(f == NULL)
+			return -EIO;
 	}
-	ffi->fh = (uint64_t)f;
+	ffi->fh = (u64int)f;
 	return 0;
 }
 
@@ -162,6 +165,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	u32int	s;
 
 	f = (FFid*)ffi->fh;
+	fprintf(logfile, "fswrite with mode %u\n", f->mode & O_ACCMODE);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
@@ -187,7 +191,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	if(f == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
-	if(_9popen(f, OREAD) == -1){
+	if(_9popen(f) == -1){
 		_9pclunk(f);
 		return -EIO;
 	}

@@ -232,14 +232,14 @@ _9pstat(FFid *f, struct stat *s)
 }
 
 int
-_9popen(FFid *f, char mode)
+_9popen(FFid *f)
 {
 	Fcall	topen, ropen;
 	
 	memset(&topen, 0, sizeof(topen));
 	topen.type = Topen;
 	topen.fid = f->fid;
-	topen.mode = mode;
+	topen.mode = f->mode;
 	if(do9p(&topen, &ropen) == -1)
 		return -1;
 	f->qid = ropen.qid;
@@ -248,25 +248,24 @@ _9popen(FFid *f, char mode)
 }
 
 FFid*
-_9pcreate(FFid *d, char *name, int perm, int mode)
+_9pcreate(FFid *f, char *name, int perm)
 {
-	FFid	*f;
 	Fcall	tcreate, rcreate;
 
-	f = fidclone(d);
+	perm &= 0777;
 	memset(&tcreate, 0, sizeof(tcreate));
 	tcreate.type = Tcreate;
 	tcreate.fid = f->fid;
 	tcreate.name = name;
 	tcreate.perm = perm;
-	tcreate.mode = mode;
+	tcreate.mode = f->mode;
 	if(do9p(&tcreate, &rcreate) == -1){
 		_9pclunk(f);
 		return NULL;
 	}
 	f->iounit = rcreate.iounit;
 	f->qid = rcreate.qid;
-	return d;
+	return f;
 }
 
 u32int

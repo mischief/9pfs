@@ -7,6 +7,6 @@ instead of using the standardize fuse library interface. Thus it does
 not work on OpenBSD (or FreeBSD) which implement different semantics
 for the fuse messages written to and read from the fuse device.
 
-This fuse  implementation uses the fuse library (as exposed in <fuse.h>)
+This fuse  implementation uses the fuse library (as exposed in `<fuse.h>`)
 and so works equally well on OpenBSD, FreeBSD, or Linux. It was expressly
 written for OpenBSD and developed primarily on that OS.

@@ -84,8 +84,15 @@ do9p(Fcall *t, Fcall *r)
 	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
 		errx(1, "Bad 9p read");
 	convM2S(rbuf, n, r);
-	if(r->tag != t->tag || r->type == Rerror || r->type != t->type+1)
+	if(r->tag != t->tag || r->type == Rerror || r->type != t->type+1){
+		if(r->tag != t->tag)
+			fprintf(logfile, "Tag mismatch\n");
+		if(r->type == Rerror)
+			fprintf(logfile, "Rerror\n");
+		if(r->type != t->type+1)
+			fprintf(logfile, "Type mismatch\n");
 		errx(1, "do9p error");
+	}
 	return 0;
 }
 	

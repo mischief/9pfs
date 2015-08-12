@@ -14,6 +14,7 @@ struct FFid
 };
 
 int	_9perrno;
+FILE	*logfile;
 
 int	_9pversion(u32int);
 FFid	*_9pattach(FFid*, FFid*);

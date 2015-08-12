@@ -240,6 +240,9 @@ main(int argc, char *argv[])
 		usage();
 	argv0 = *argv++;
 	argc--;
+	if((logfile = fopen("/tmp/9pfs.log", "w")) == NULL)
+		err(1, "Could not open the log");
+	setlinebuf(logfile);
 	memset(&p9addr, 0, sizeof(p9addr));
 	p9addr.sun_family = AF_UNIX;
 	s = p9addr.sun_path;

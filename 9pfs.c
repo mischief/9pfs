@@ -32,10 +32,10 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	int	r;
 
-	fprintf(stderr, "fsgetattr with path %s\n", path);
-	if((f = hasfid(path)) == NULL)
+	if((f = hasfid(path)) != NULL)
+		f = fidclone(f);
+	else
 		f = _9pwalk(path);
-	fprintf(stderr, "fid is %u\n", f->fid);
 	if(f == NULL){
 		errno = ENOENT;
 		return -1;
@@ -99,7 +99,6 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 	FFid	*f, *d;
 	char	*name, *dpath;
 
-	fprintf(stderr, "fscreate with path %s\n", path);
 	if((f = hasfid(path)) != NULL)
 		f = fidclone(f);
 	else
@@ -114,7 +113,6 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			return -EIO;
 		}
 	}else{
-		fprintf(stderr, "or here\n");
 		dpath = cleanname(estrdup(path));
 		if((name = strrchr(dpath, '/')) == dpath){
 			d = rootfid;
@@ -126,18 +124,12 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			if(d == NULL)
 				return -EIO;
 		}
-		fprintf(stderr, "name is %s, dpath is %s\n", name, dpath);
-		f = _9pcreate(d, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
-		if(f == NULL){
-			fprintf(stderr, "f is null\n");
+		f = _9pcreate(d, name, mode & 0777, ffi->flags & O_ACCMODE);
+		if(f == NULL)
 			return -EIO;
-		}
-		fprintf(stderr, "f has fid %u\n", f->fid);
 		addfid(cleanname(estrdup(path)), f);
-		fprintf(stderr, "f has path %s\n", f->path);
 	}
 	ffi->fh = (uint64_t)f;
-	fprintf(stderr, "fscreate is done\n");
 	return 0;
 }
 
@@ -171,10 +163,12 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	u32int	n, r;
 	u32int	s;
 
+	fprintf(stderr, "fwrite started\n");
 	f = (FFid*)ffi->fh;
-	fprintf(stderr, "fswrite with fid %u\n", f->fid);
-	if(f->mode & O_RDONLY)
+	if(f->mode & O_RDONLY){
+		fprintf(stderr, "wrong mode\n");
 		return -EACCES;
+	}
 	f->offset = off;
 	s = size;
 	n = 0;

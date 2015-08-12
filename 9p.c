@@ -179,8 +179,10 @@ _9pwalk(const char *path)
 		free(cleanpath);
 		return rootfid;
 	}
-	if((f = _9pwalkr(rootfid, cleanpath+1)) != NULL)
-		addfid((const char*)cleanpath, f);
+	if((f = _9pwalkr(rootfid, cleanpath+1)) != NULL){
+		if(addfid(cleanpath, f) == -1)
+			free(cleanpath);
+	}
 	return f;
 }
 
@@ -432,22 +434,20 @@ str2int(const char *s)
 }
 
 int
-addfid(const char *path, FFid *f)
+addfid(char *path, FFid *f)
 {
 	FFid	**floc;
-	char	*s;
 	int	h;
 
-	s = cleanname(estrdup(path));
-	h = str2int(s);
+	h = str2int(path);
 	for(floc = pathhash + h % NHASH; *floc != NULL; floc = &(*floc)->pathlink){
-		if(strcmp(s, (*floc)->path) == 0)
+		if(strcmp(path, (*floc)->path) == 0)
 			break;
 	}
 	if(*floc != NULL)
 		return -1;
 	*floc = f;
-	f->path = s;
+	f->path = path;
 	return 0;
 }
 

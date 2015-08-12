@@ -36,10 +36,8 @@ fsgetattr(const char *path, struct stat *st)
 		f = fidclone(f);
 	else
 		f = _9pwalk(path);
-	if(f == NULL){
-		errno = ENOENT;
-		return -1;
-	}
+	if(f == NULL)
+		return -ENOENT;
 	r = _9pstat(f, st);
 	_9pclunk(f);
 	return r;
@@ -61,7 +59,7 @@ fstruncate(const char *path, off_t off)
 	else
 		f = _9pwalk(path);
 	if(f == NULL)
-		errno = ENOENT;
+		return -ENOENT;
 	f->mode = OWRITE | OTRUNC;
 	if(_9popen(f, f->mode) == -1){
 		_9pclunk(f);
@@ -163,12 +161,9 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	u32int	n, r;
 	u32int	s;
 
-	fprintf(stderr, "fwrite started\n");
 	f = (FFid*)ffi->fh;
-	if(f->mode & O_RDONLY){
-		fprintf(stderr, "wrong mode\n");
+	if(f->mode & O_RDONLY)
 		return -EACCES;
-	}
 	f->offset = off;
 	s = size;
 	n = 0;
@@ -190,7 +185,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	else
 		f = fidclone(f);
 	if(f == NULL)
-		return -_9perrno;
+		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
 	if(_9popen(f, OREAD) == -1){
 		_9pclunk(f);

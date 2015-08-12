@@ -32,8 +32,10 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	int	r;
 
+	fprintf(stderr, "fsgetattr with path %s\n", path);
 	if((f = hasfid(path)) == NULL)
 		f = _9pwalk(path);
+	fprintf(stderr, "fid is %u\n", f->fid);
 	if(f == NULL){
 		errno = ENOENT;
 		return -1;
@@ -41,12 +43,6 @@ fsgetattr(const char *path, struct stat *st)
 	r = _9pstat(f, st);
 	_9pclunk(f);
 	return r;
-}
-
-int
-fsfgetattr(const char *path, struct stat *st, struct fuse_file_info *ffi)
-{
-	return _9pstat((FFid*)ffi->fh, st);
 }
 
 int
@@ -103,6 +99,7 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 	FFid	*f, *d;
 	char	*name, *dpath;
 
+	fprintf(stderr, "fscreate with path %s\n", path);
 	if((f = hasfid(path)) != NULL)
 		f = fidclone(f);
 	else
@@ -117,6 +114,7 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			return -EIO;
 		}
 	}else{
+		fprintf(stderr, "or here\n");
 		dpath = cleanname(estrdup(path));
 		if((name = strrchr(dpath, '/')) == dpath){
 			d = rootfid;
@@ -128,12 +126,18 @@ fscreate(const char *path, mode_t mode, struct fuse_file_info *ffi)
 			if(d == NULL)
 				return -EIO;
 		}
+		fprintf(stderr, "name is %s, dpath is %s\n", name, dpath);
 		f = _9pcreate(d, name, ffi->flags & 0777, ffi->flags & O_ACCMODE);
-		if(f == NULL)
+		if(f == NULL){
+			fprintf(stderr, "f is null\n");
 			return -EIO;
+		}
+		fprintf(stderr, "f has fid %u\n", f->fid);
 		addfid(cleanname(estrdup(path)), f);
+		fprintf(stderr, "f has path %s\n", f->path);
 	}
 	ffi->fh = (uint64_t)f;
+	fprintf(stderr, "fscreate is done\n");
 	return 0;
 }
 
@@ -168,6 +172,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	u32int	s;
 
 	f = (FFid*)ffi->fh;
+	fprintf(stderr, "fswrite with fid %u\n", f->fid);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
@@ -224,7 +229,6 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
-	.fgetattr =	fsfgetattr,
 	.truncate =	fstruncate,
 	.open =		fsopen,
 	.create =	fscreate,

@@ -1,4 +1,4 @@
-This is a fuse filesystem for attaching a 9p server to your file tree. In
+This is a fuse filesystem for attaching a 9p server to your unix file tree. In
 other words a fuse to 9p translator.
 
 "But doesn't a 9pfuse implementation already exist?", you may ask. Yes,

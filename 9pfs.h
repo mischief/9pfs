@@ -24,8 +24,8 @@ int	_9pstat(FFid*, struct stat*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*);
 FFid	*_9pcreate(FFid*, char*, int);
-u32int	_9pread(FFid*, void*, u32int*);
-u32int	_9pwrite(FFid*, void*, u32int*);
+u32int	_9pread(FFid*, void*, u32int);
+u32int	_9pwrite(FFid*, void*, u32int);
 u32int	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);
@@ -37,3 +37,5 @@ void	*erealloc(void*, size_t);
 void	*ereallocarray(void*, size_t, size_t);
 void	*ecalloc(size_t, size_t);
 char	*estrdup(const char *);
+
+int	dprint(char*, ...);

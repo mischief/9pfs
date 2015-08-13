@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "libc.h"
 #include "fcall.h"
@@ -23,6 +24,7 @@ enum
 };
 
 FFid	*rootfid;
+int	debug;
 
 void	usage(void);
 
@@ -66,7 +68,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	fprintf(logfile, "fsopen on %s\n", path);
+	dprint("fsopen on %s\n", path);
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
@@ -97,7 +99,7 @@ fscreate(const char *path, mode_t perms, struct fuse_file_info *ffi)
 		}
 		if(f == NULL)
 			return -EIO;
-		fprintf(logfile, "fscreate with perms %o and access %o\n", perms, ffi->flags&O_ACCMODE);
+		dprint("fscreate with perms %o and access %o\n", perms, ffi->flags&O_ACCMODE);
 		f->mode = ffi->flags & O_ACCMODE;
 		f = _9pcreate(f, name, perms);
 		if(f == NULL)
@@ -131,7 +133,8 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	f->offset = off;
 	s = size;
 	n = 0;
-	while((r = _9pread(f, buf+n, &s)) > 0){
+	while((r = _9pread(f, buf+n, s)) > 0){
+		s -= r;
 		n += r;
 	}
 	if(r < 0)
@@ -148,13 +151,14 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	u32int	s;
 
 	f = (FFid*)ffi->fh;
-	fprintf(logfile, "fswrite with mode %u\n", f->mode & O_ACCMODE);
+	dprint("fswrite with mode %u\n", f->mode & O_ACCMODE);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
 	s = size;
 	n = 0;
-	while((r = _9pwrite(f, (char*)buf+n, &s)) > 0){
+	while((r = _9pwrite(f, (char*)buf+n, s)) > 0){
+		s -= r;
 		n += r;
 	}
 	if(r < 0)
@@ -216,16 +220,29 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*s, *end, *argv0;
-	int			srvfd;
+	char			*s, *end;
+	int			srvfd, ch;
 
-	if(argc != 3)
+	while((ch = getopt(argc, argv, "d")) != -1){
+		switch(ch){
+		case 'd':
+			debug = 1;
+			break;
+		default:
+			usage();
+			break;
+		}
+	}
+	argc -= optind;
+	argv += optind;
+	if(argc != 2)
 		usage();
-	argv0 = *argv++;
-	argc--;
-	if((logfile = fopen("/tmp/9pfs.log", "w")) == NULL)
-		err(1, "Could not open the log");
-	setlinebuf(logfile);
+	if(debug){
+		if((logfile = fopen("/tmp/9pfs.log", "w")) == NULL)
+			err(1, "Could not open the log");
+		setlinebuf(logfile);
+	}
+
 	memset(&p9addr, 0, sizeof(p9addr));
 	p9addr.sun_family = AF_UNIX;
 	s = p9addr.sun_path;
@@ -235,6 +252,7 @@ main(int argc, char *argv[])
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
 		err(1, "Could not connect to %s", p9addr.sun_path);
+
 	init9p(srvfd);
 	_9pversion(MSIZE);
 	memset(&rfid, 0, sizeof(rfid));
@@ -249,4 +267,18 @@ void
 usage(void)
 {
 	exit(1);
+}
+
+int
+dprint(char *fmt, ...)
+{
+	va_list	va;
+	int	r;
+
+	if(debug == 0)
+		return 0;
+	va_start(va, fmt);
+	r = vfprintf(logfile, fmt, va);
+	va_end(va);
+	return r;
 }

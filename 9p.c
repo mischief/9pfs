@@ -87,12 +87,12 @@ do9p(Fcall *t, Fcall *r)
 	if(r->tag != t->tag)
 		errx(1, "tag mismatch");
 	if(r->type == Rerror){
-		fprintf(logfile, "Rerror: %s\n", r->ename);
+		dprint("Rerror: %s\n", r->ename);
 		return -1;
 	}
 	if(r->type != t->type+1){
-		fprintf(logfile, "Type mismatch\n");
-		fprintf(logfile, "Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
+		dprint("Type mismatch\n");
+		dprint("Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
 		errx(1, "do9p error");
 	}
 	return 0;
@@ -265,7 +265,10 @@ _9pcreate(FFid *f, char *name, int perm)
 		_9pclunk(f);
 		return NULL;
 	}
-	f->iounit = rcreate.iounit;
+	if(rcreate.iounit != 0)
+		f->iounit = rcreate.iounit;
+	else
+		f->iounit = msize - IOHDRSZ;
 	f->qid = rcreate.qid;
 	return f;
 }
@@ -326,14 +329,14 @@ _9pdirread(FFid *f, Dir **d)
 	u32int	ts, n;
 
 	n = f->iounit;
-	ts = _9pread(f, buf, &n);
+	ts = _9pread(f, buf, n);
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
 	return ts;
 }
 
 u32int
-_9pread(FFid *f, void *buf, u32int *n)
+_9pread(FFid *f, void *buf, u32int n)
 {
 	Fcall	tread, rread;
 
@@ -341,17 +344,19 @@ _9pread(FFid *f, void *buf, u32int *n)
 	tread.type = Tread;
 	tread.fid = f->fid;
 	tread.offset = f->offset;
-	tread.count = *n < f->iounit ? *n : f->iounit;
+	tread.count = n < f->iounit ? n : f->iounit;
+	dprint("_9pread on %s with count %u, offset %lld, fid %u\n", f->path, tread.count, tread.offset, f->fid);
 	if(do9p(&tread, &rread) == -1)
 		return -1;
-	*n -= rread.count;
 	f->offset += rread.count;
+	dprint("Data returned was %s\n", rread.data);
 	memcpy(buf, rread.data, rread.count);
+	dprint("_9pread returning file offset is %lu, fid for file is %u\n", f->offset, f->fid);
 	return rread.count;
 }
 
 u32int
-_9pwrite(FFid *f, void *buf, u32int *n)
+_9pwrite(FFid *f, void *buf, u32int n)
 {
 	Fcall	twrite, rwrite;
 
@@ -359,11 +364,10 @@ _9pwrite(FFid *f, void *buf, u32int *n)
 	twrite.type = Twrite;
 	twrite.fid = f->fid;
 	twrite.offset = f->offset;
-	twrite.count = *n < f->iounit ? *n : f->iounit;
+	twrite.count = n < f->iounit ? n : f->iounit;
 	twrite.data = buf;
 	if(do9p(&twrite, &rwrite) == -1)
 		return -1;
-	*n -= rwrite.count;
 	f->offset += rwrite.count;
 	return rwrite.count;
 }

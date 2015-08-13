@@ -84,17 +84,15 @@ do9p(Fcall *t, Fcall *r)
 	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
 		errx(1, "Bad 9p read");
 	convM2S(rbuf, n, r);
-	if(r->tag != t->tag || r->type == Rerror || r->type != t->type+1){
-		if(r->tag != t->tag){
-			fprintf(logfile, "Tag mismatch\n");
-			fprintf(logfile, "Expected %d got %d\n", t->tag, r->tag);
-		}
-		if(r->type == Rerror)
-			fprintf(logfile, "Rerror: %s\n", r->ename);
-		if(r->type != t->type+1){
-			fprintf(logfile, "Type mismatch\n");
-			fprintf(logfile, "Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
-		}
+	if(r->tag != t->tag)
+		errx(1, "tag mismatch");
+	if(r->type == Rerror){
+		fprintf(logfile, "Rerror: %s\n", r->ename);
+		return -1;
+	}
+	if(r->type != t->type+1){
+		fprintf(logfile, "Type mismatch\n");
+		fprintf(logfile, "Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
 		errx(1, "do9p error");
 	}
 	return 0;
@@ -244,7 +242,10 @@ _9popen(FFid *f)
 	if(do9p(&topen, &ropen) == -1)
 		return -1;
 	f->qid = ropen.qid;
-	f->iounit = ropen.iounit;
+	if(ropen.iounit != 0)
+		f->iounit = ropen.iounit;
+	else
+		f->iounit = msize - IOHDRSZ;
 	return 0;
 }
 

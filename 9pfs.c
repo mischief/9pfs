@@ -255,8 +255,6 @@ main(int argc, char *argv[])
 	if(argc != 2)
 		usage();
 	*fargp++ = "-s";
-	*fargp++ = "-o";
-	*fargp++ = "sync_read";
 	*fargp++ = argv[1];
 	if(debug){
 		snprintf(logstr, sizeof(logstr), "/tmp/9pfs-%d.log", getpid());

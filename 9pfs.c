@@ -220,10 +220,11 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*s, *end;
+	char			*s, *end, *fusearg[3];
 	int			srvfd, ch;
 
-	while((ch = getopt(argc, argv, "d")) != -1){
+	fusearg[0] = *argv;
+	while((ch = getopt(argc, argv, ":d")) != -1){
 		switch(ch){
 		case 'd':
 			debug = 1;
@@ -237,6 +238,8 @@ main(int argc, char *argv[])
 	argv += optind;
 	if(argc != 2)
 		usage();
+	fusearg[1] = "-s";
+	fusearg[2] = argv[1];
 	if(debug){
 		if((logfile = fopen("/tmp/9pfs.log", "w")) == NULL)
 			err(1, "Could not open the log");
@@ -259,7 +262,7 @@ main(int argc, char *argv[])
 	memset(&afid, 0, sizeof(afid));
 	afid.fid = NOFID;
 	rootfid = _9pattach(&rfid, &afid);
-	fuse_main(argc, argv, &fsops, NULL);
+	fuse_main(3, fusearg, &fsops, NULL);
 	exit(0);
 }
 

@@ -267,10 +267,7 @@ main(int argc, char *argv[])
 
 	memset(&p9addr, 0, sizeof(p9addr));
 	p9addr.sun_family = AF_UNIX;
-	s = p9addr.sun_path;
-	end = s + sizeof(p9addr.sun_path);
-	s = strecpy(s, end, "/tmp/ns.ben.:0/");
-	strecpy(s, end, argv[0]);
+	snprintf(p9addr.sun_path, sizeof(p9addr.sun_path), "/tmp/ns.ben.:0/%s", argv[0]);
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
 		err(1, "Could not connect to %s", p9addr.sun_path);

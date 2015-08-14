@@ -1,5 +1,4 @@
 typedef struct FFid	FFid;
-typedef struct PFid 	PFid;
 
 struct FFid
 {
@@ -13,7 +12,6 @@ struct FFid
 	char	*path;
 };
 
-int	_9perrno;
 FILE	*logfile;
 
 int	_9pversion(u32int);

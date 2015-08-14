@@ -66,7 +66,7 @@ int		msize;
 FFid		*fidhash[NHASH];
 FFid		*pathhash[NHASH];
 
-FFid		*lookup(uint32_t, int);
+FFid		*lookup(u32int, int);
 FFid		*uniqfid(void);
 int		hashstr(const char*);
 
@@ -123,7 +123,7 @@ err:
 }
 	
 int
-_9pversion(uint32_t m)
+_9pversion(u32int m)
 {
 	Fcall	tver, rver;
 
@@ -434,8 +434,8 @@ _9pclunk(FFid *f)
 FFid*
 uniqfid(void)
 {
-	FFid		*f;
-	uint32_t	fid;
+	FFid	*f;
+	u32int	fid;
 
 	do
 		fid = random();
@@ -445,7 +445,7 @@ uniqfid(void)
 	
 
 FFid*
-lookup(uint32_t fid, int act)
+lookup(u32int fid, int act)
 {
 	FFid	**floc, *f;
 

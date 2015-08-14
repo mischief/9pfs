@@ -78,7 +78,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		_9pclunk(f);
 		return -EIO;
 	}
-	ffi->fh = (uint64_t)f;
+	ffi->fh = (u64int)f;
 	return 0;
 }
 
@@ -135,20 +135,18 @@ int
 fsread(const char *path, char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
-	FFid		*f;
-	uint32_t	n, r;
-	u32int		s;
+	FFid	*f;
+	u32int	n, r;
 
 	f = (FFid*)ffi->fh;
 	dprint("fsread on %s with fid %u\n", path, f->fid);
 	if(f->mode & O_WRONLY)
 		return -EACCES;
 	f->offset = off;
-	s = size;
 	n = 0;
-	while((r = _9pread(f, buf+n, s)) > 0){
+	while((r = _9pread(f, buf+n, size)) > 0){
 		dprint("In fsread loop: %*s\n", r, buf+n);
-		s -= r;
+		size -= r;
 		n += r;
 	}
 	if(r < 0)

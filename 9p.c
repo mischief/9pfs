@@ -79,23 +79,35 @@ do9p(Fcall *t, Fcall *r)
 	int	n;
 
 	t->tag = random();
-	n = convS2M(t, tbuf, msize);
-	write(srvfd, tbuf, n);
-	if((n = read9pmsg(srvfd, rbuf, msize)) == -1)
-		errx(1, "Bad 9p read");
-	convM2S(rbuf, n, r);
+	if((n = convS2M(t, tbuf, msize)) == 0){
+		r->ename = "Bad S2M conversion";
+		goto err;
+	}
+	if(write(srvfd, tbuf, n) != n){
+		r->ename = "Bad 9p write";
+		goto err;
+	}
+	if((n = read9pmsg(srvfd, rbuf, msize)) == -1){
+		r->ename = "Bad 9p read";
+		goto err;
+	}
+	if(convM2S(rbuf, n, r) != n){
+		r->ename = "Bad M2S conversion";
+		goto err;
+	}
 	if(r->tag != t->tag)
 		errx(1, "tag mismatch");
-	if(r->type == Rerror){
-		dprint("Rerror: %s\n", r->ename);
-		return -1;
-	}
 	if(r->type != t->type+1){
 		dprint("Type mismatch\n");
 		dprint("Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
-		errx(1, "do9p error");
+		goto err;
 	}
 	return 0;
+
+err:
+	dprint("9p error %s\n", r->ename);
+	r->type = Rerror;
+	return -1;
 }
 	
 int

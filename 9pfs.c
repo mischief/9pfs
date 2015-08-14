@@ -223,7 +223,7 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*s, *end, *fusearg[6], **fargp;
+	char			*s, *end, logstr[100], *fusearg[6], **fargp;
 	int			srvfd, ch;
 
 	fargp = fusearg;
@@ -248,7 +248,8 @@ main(int argc, char *argv[])
 	*fargp++ = "sync_read";
 	*fargp++ = argv[1];
 	if(debug){
-		if((logfile = fopen("/tmp/9pfs.log", "w")) == NULL)
+		snprintf(logstr, sizeof(logstr), "/tmp/9pfs-%d.log", getpid());
+		if((logfile = fopen(logstr, "w")) == NULL)
 			err(1, "Could not open the log");
 		setlinebuf(logfile);
 	}

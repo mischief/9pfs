@@ -234,7 +234,7 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*s, *end, logstr[100], *fusearg[6], **fargp;
+	char			logstr[100], *fusearg[6], **fargp;
 	int			srvfd, ch;
 
 	fargp = fusearg;

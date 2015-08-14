@@ -34,8 +34,20 @@ char *calls2str[] = {
   [Tremove]	"Tremove",
   [Tstat]	"Tstat",
   [Twstat]	"Twstat",
-  [Tmax]	"Tmax",
-  [Topenfd]	"Topenfd"
+  [Rversion]	"Rversion",
+  [Rauth]	"Rauth",
+  [Rattach]	"Rattach",
+  [Rerror]	"Rerror",
+  [Rflush]	"Rflush",
+  [Rwalk]	"Rwalk",
+  [Ropen]	"Ropen",
+  [Rcreate]	"Rcreate",
+  [Rread]	"Rread",
+  [Rwrite]	"Rwrite",
+  [Rclunk]	"Rclunk",
+  [Rremove]	"Rremove",
+  [Rstat]	"Rstat",
+  [Rwstat]	"Rwstat"
 };
 
 enum
@@ -285,6 +297,25 @@ _9pcreate(FFid *f, char *name, int perm)
 	return f;
 }
 
+int
+_9premove(FFid *f)
+{
+	Fcall	tremove, rremove;
+
+	if(f == NULL)
+		return 0;
+	memset(&tremove, 0, sizeof(tremove));
+	tremove.type = Tremove;
+	tremove.fid = f->fid;
+	if(lookup(f->fid, DEL) != FDEL)
+		return -1;
+	if(do9p(&tremove, &rremove) == -1){
+		_9pclunk(f);
+		return -1;
+	}
+	return 0;
+}
+
 u32int
 dirpackage(uchar *buf, u32int ts, Dir **d)
 {
@@ -353,7 +384,6 @@ _9pread(FFid *f, void *buf, u32int n)
 	Fcall	tread, rread;
 
 	memset(&tread, 0, sizeof(tread));
-	memset(&rread, 0, sizeof(rread));
 	tread.type = Tread;
 	tread.fid = f->fid;
 	tread.offset = f->offset;
@@ -397,8 +427,7 @@ _9pclunk(FFid *f)
 	tclunk.fid = f->fid;
 	if(lookup(f->fid, DEL) != FDEL)
 		return -1;
-	do9p(&tclunk, &rclunk);
-	return 0;
+	return do9p(&tclunk, &rclunk);
 }
 
 FFid*
@@ -447,17 +476,6 @@ lookup(uint32_t fid, int act)
 		break;
 	}
 	return f;			
-}
-
-int
-str2int(const char *s)
-{
-	int		hash;
-	u_char	 	*c;
-
-	for(c = (u_char*)s, hash = 0; *c != '\0'; c++)
-		hash += hash * 31 + *c;
-	return hash >= 0 ? hash : -hash;
 }
 
 FFid*

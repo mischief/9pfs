@@ -120,6 +120,18 @@ fscreate(const char *path, mode_t perms, struct fuse_file_info *ffi)
 }
 
 int
+fsunlink(const char *path)
+{
+	FFid	*f;
+
+	if((f = _9pwalk(path)) == NULL)
+		return -ENOENT;
+	if(_9premove(f) == -1)
+		return -EIO;
+	return 0;
+}
+
+int
 fsread(const char *path, char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
@@ -211,6 +223,7 @@ struct fuse_operations fsops = {
 	.truncate =	fstruncate,
 	.open =		fsopen,
 	.create =	fscreate,
+	.unlink =	fsunlink,
 	.read =		fsread,
 	.write =	fswrite,
 	.opendir = 	fsopendir,

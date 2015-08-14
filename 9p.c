@@ -341,6 +341,7 @@ _9pread(FFid *f, void *buf, u32int n)
 	Fcall	tread, rread;
 
 	memset(&tread, 0, sizeof(tread));
+	memset(&rread, 0, sizeof(rread));
 	tread.type = Tread;
 	tread.fid = f->fid;
 	tread.offset = f->offset;
@@ -349,7 +350,7 @@ _9pread(FFid *f, void *buf, u32int n)
 	if(do9p(&tread, &rread) == -1)
 		return -1;
 	f->offset += rread.count;
-	dprint("Data returned was %s\n", rread.data);
+	dprint("Data returned was\n%s with count %d\n", rread.data, rread.count);
 	memcpy(buf, rread.data, rread.count);
 	dprint("_9pread returning file offset is %lu, fid for file is %u\n", f->offset, f->fid);
 	return rread.count;

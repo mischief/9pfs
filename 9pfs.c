@@ -128,17 +128,20 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	u32int		s;
 
 	f = (FFid*)ffi->fh;
+	dprint("fsread on %s with fid %u\n", path, f->fid);
 	if(f->mode & O_WRONLY)
 		return -EACCES;
 	f->offset = off;
 	s = size;
 	n = 0;
 	while((r = _9pread(f, buf+n, s)) > 0){
+		dprint("In fsread loop: %*s\n", r, buf+n);
 		s -= r;
 		n += r;
 	}
 	if(r < 0)
 		return -EIO;
+	dprint("Leaving fsread, buf is: %*s\n", n, buf);
 	return n;
 }
 
@@ -220,14 +223,16 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			*s, *end, *fusearg[3];
+	char			*s, *end, *fusearg[6], **fargp;
 	int			srvfd, ch;
 
-	fusearg[0] = *argv;
+	fargp = fusearg;
+	*fargp++ = *argv;
 	while((ch = getopt(argc, argv, ":d")) != -1){
 		switch(ch){
 		case 'd':
 			debug = 1;
+			*fargp++ = "-d";
 			break;
 		default:
 			usage();
@@ -238,8 +243,10 @@ main(int argc, char *argv[])
 	argv += optind;
 	if(argc != 2)
 		usage();
-	fusearg[1] = "-s";
-	fusearg[2] = argv[1];
+	*fargp++ = "-s";
+	*fargp++ = "-o";
+	*fargp++ = "sync_read";
+	*fargp++ = argv[1];
 	if(debug){
 		if((logfile = fopen("/tmp/9pfs.log", "w")) == NULL)
 			err(1, "Could not open the log");
@@ -251,7 +258,7 @@ main(int argc, char *argv[])
 	s = p9addr.sun_path;
 	end = s + sizeof(p9addr.sun_path);
 	s = strecpy(s, end, "/tmp/ns.ben.:0/");
-	strecpy(s, end, *argv);
+	strecpy(s, end, argv[0]);
 	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
 		err(1, "Could not connect to %s", p9addr.sun_path);
@@ -262,7 +269,7 @@ main(int argc, char *argv[])
 	memset(&afid, 0, sizeof(afid));
 	afid.fid = NOFID;
 	rootfid = _9pattach(&rfid, &afid);
-	fuse_main(3, fusearg, &fsops, NULL);
+	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }
 

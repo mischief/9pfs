@@ -190,7 +190,8 @@ _9pwalkr(FFid *r, char *path)
 		twalk.newfid = f->fid;
 		twalk.nwname = s - twalk.wname;
 		if(do9p(&twalk, &rwalk) == -1 || rwalk.nwqid < twalk.nwname){
-			lookup(f->fid, DEL);
+			if(lookup(f->fid, DEL) != FDEL)
+				errx(1, "Fid %d not found in hash", f->fid);
 			free(bp);
 			return NULL;
 		}
@@ -307,12 +308,12 @@ _9premove(FFid *f)
 	memset(&tremove, 0, sizeof(tremove));
 	tremove.type = Tremove;
 	tremove.fid = f->fid;
-	if(lookup(f->fid, DEL) != FDEL)
-		return -1;
 	if(do9p(&tremove, &rremove) == -1){
 		_9pclunk(f);
 		return -1;
 	}
+	if(lookup(f->fid, DEL) != FDEL)
+		errx(1, "Fid %d not found in hash", f->fid);
 	return 0;
 }
 
@@ -426,7 +427,7 @@ _9pclunk(FFid *f)
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
 	if(lookup(f->fid, DEL) != FDEL)
-		return -1;
+		errx(1, "Fid %d not found in hash", f->fid);
 	return do9p(&tclunk, &rclunk);
 }
 

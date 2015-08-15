@@ -20,25 +20,35 @@
 
 enum
 {
+	GET,
+	PUT,
+	DEL,
 	MSIZE = 8192
 };
 
 FFid	*rootfid;
 int	debug;
 
-void	usage(void);
+void			usage(void);
+struct stat	*statlookup(const char *, int);
 
 int
 fsgetattr(const char *path, struct stat *st)
 {
-	FFid	*f;
-	int	r;
+	FFid		*f;
+	struct stat	*s;
 
+	if((s = statlookup(path, GET)) != NULL){
+		memcpy(st, s, sizeof(*st));
+		return 0;
+	}
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
-	r = _9pstat(f, st);
-	_9pclunk(f);
-	return r;
+	if(_9pstat(f, st) == -1){
+		_9pclunk(f);
+		return -EIO;
+	}
+	return 0;
 }
 
 int

@@ -245,7 +245,7 @@ _9pstat(FFid *f, struct stat *s)
 	s->st_nlink = d->mode & DMDIR ? rstat.nstat + 1 : 1;
 	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
 	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
-	s->st_size = d->length == 0 ? msize - IOHDRSZ : d->length; /* HACK */
+	s->st_size = d->length;
 	s->st_blksize = msize - IOHDRSZ;
 	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
 	s->st_atime = d->atime;
@@ -366,7 +366,7 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 	return nn;
 }
 
-u32int
+long
 _9pdirread(FFid *f, Dir **d)
 {
 	uchar	buf[DIRMAX];
@@ -379,7 +379,7 @@ _9pdirread(FFid *f, Dir **d)
 	return ts;
 }
 
-u32int
+long
 _9pread(FFid *f, void *buf, u32int n)
 {
 	Fcall	tread, rread;
@@ -390,8 +390,10 @@ _9pread(FFid *f, void *buf, u32int n)
 	tread.offset = f->offset;
 	tread.count = n < f->iounit ? n : f->iounit;
 	dprint("_9pread on %s with count %u, offset %lld, fid %u\n", f->path, tread.count, tread.offset, f->fid);
-	if(do9p(&tread, &rread) == -1)
+	if(do9p(&tread, &rread) == -1){
+		dprint("_9pread error returned from do9p\n");
 		return -1;
+	}
 	f->offset += rread.count;
 	dprint("Data returned was\n%s with count %d\n", rread.data, rread.count);
 	memcpy(buf, rread.data, rread.count);
@@ -399,7 +401,7 @@ _9pread(FFid *f, void *buf, u32int n)
 	return rread.count;
 }
 
-u32int
+long
 _9pwrite(FFid *f, void *buf, u32int n)
 {
 	Fcall	twrite, rwrite;

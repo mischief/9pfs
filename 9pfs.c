@@ -136,7 +136,8 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	u32int	n, r;
+	long	r;
+	u32int	n;
 
 	f = (FFid*)ffi->fh;
 	dprint("fsread on %s with fid %u\n", path, f->fid);
@@ -145,7 +146,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	f->offset = off;
 	n = 0;
 	while((r = _9pread(f, buf+n, size)) > 0){
-		dprint("In fsread loop: %*s\n", r, buf+n);
+		dprint("In fsread loop r is %d: %*s\n", r, r, buf+n);
 		size -= r;
 		n += r;
 	}
@@ -160,18 +161,17 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	u32int	n, r;
-	u32int	s;
+	long	r;
+	u32int	n, s;
 
 	f = (FFid*)ffi->fh;
 	dprint("fswrite with mode %u\n", f->mode & O_ACCMODE);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
-	s = size;
 	n = 0;
-	while((r = _9pwrite(f, (char*)buf+n, s)) > 0){
-		s -= r;
+	while((r = _9pwrite(f, (char*)buf+n, size)) > 0){
+		size -= r;
 		n += r;
 	}
 	if(r < 0)

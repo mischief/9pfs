@@ -23,9 +23,9 @@ int	_9pclunk(FFid*);
 int	_9popen(FFid*);
 FFid	*_9pcreate(FFid*, char*, int);
 int	_9premove(FFid*);
-u32int	_9pread(FFid*, void*, u32int);
-u32int	_9pwrite(FFid*, void*, u32int);
-u32int	_9pdirread(FFid*, Dir**);
+long	_9pread(FFid*, void*, u32int);
+long	_9pwrite(FFid*, void*, u32int);
+long	_9pdirread(FFid*, Dir**);
 
 void	init9p(int);
 

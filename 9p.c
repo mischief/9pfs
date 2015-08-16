@@ -366,7 +366,7 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 	return nn;
 }
 
-int
+long
 _9pdirread(FFid *f, Dir **d)
 {
 	uchar	buf[DIRMAX];
@@ -379,7 +379,7 @@ _9pdirread(FFid *f, Dir **d)
 	return ts;
 }
 
-int
+long
 _9pread(FFid *f, void *buf, u32int n)
 {
 	Fcall	tread, rread;
@@ -401,7 +401,7 @@ _9pread(FFid *f, void *buf, u32int n)
 	return rread.count;
 }
 
-int
+long
 _9pwrite(FFid *f, void *buf, u32int n)
 {
 	Fcall	twrite, rwrite;

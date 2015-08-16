@@ -64,7 +64,6 @@ void		*tbuf, *rbuf;
 int		fids;
 int		msize;
 FFid		*fidhash[NHASH];
-FFid		*pathhash[NHASH];
 
 FFid		*lookup(u32int, int);
 FFid		*uniqfid(void);

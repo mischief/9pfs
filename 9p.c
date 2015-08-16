@@ -66,8 +66,9 @@ int		msize;
 FFid		*fidhash[NHASH];
 FFid		*pathhash[NHASH];
 
-static FFid	*lookup(u32int, int);
-static FFid	*uniqfid(void);
+FFid		*lookup(u32int, int);
+FFid		*uniqfid(void);
+int		hashstr(const char*);
 
 void
 init9p(int sfd)
@@ -316,7 +317,6 @@ _9premove(FFid *f)
 	return 0;
 }
 
-static
 u32int
 dirpackage(uchar *buf, u32int ts, Dir **d)
 {
@@ -433,7 +433,6 @@ _9pclunk(FFid *f)
 	return do9p(&tclunk, &rclunk);
 }
 
-static
 FFid*
 uniqfid(void)
 {
@@ -446,7 +445,7 @@ uniqfid(void)
 	return f;
 }
 	
-static
+
 FFid*
 lookup(u32int fid, int act)
 {

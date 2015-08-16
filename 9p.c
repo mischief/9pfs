@@ -68,7 +68,7 @@ FFid		*pathhash[NHASH];
 
 FFid		*lookup(u32int, int);
 FFid		*uniqfid(void);
-int		hashstr(const char*);
+Dir		*hashdir(char*, Dir*, int);
 
 void
 init9p(int sfd)
@@ -217,12 +217,34 @@ _9pwalk(const char *path)
 	return f;
 }
 
+void
+dir2stat(struct stat *s, Dir *d)
+{
+	struct passwd	*p;
+	struct group	*g;
+
+	s->st_dev = d->dev;
+	s->st_ino = d->qid.path;
+	s->st_mode = d->mode & 0777;
+	if(d->mode & DMDIR)
+		s->st_mode |= S_IFDIR;
+	else
+		s->st_mode |= S_IFREG;
+	s->st_nlink = 1;
+	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
+	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
+	s->st_size = d->length;
+	s->st_blksize = msize - IOHDRSZ;
+	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
+	s->st_atime = d->atime;
+	s->st_mtime = s->st_ctime = d->mtime;
+	s->st_rdev = 0;
+}	
+
 int
 _9pstat(FFid *f, struct stat *s)
 {
 	Dir		*d;
-	struct passwd	*p;
-	struct group	*g;
 	Fcall		tstat, rstat;
 
 	memset(&tstat, 0, sizeof(tstat));
@@ -235,23 +257,8 @@ _9pstat(FFid *f, struct stat *s)
 		free(d);
 		return -1;
 	}
-	s->st_dev = d->dev;
-	s->st_ino = d->qid.path;
-	s->st_mode = d->mode & 0777;
-	if(d->mode & DMDIR)
-		s->st_mode |= S_IFDIR;
-	else
-		s->st_mode |= S_IFREG;
-	s->st_nlink = d->mode & DMDIR ? rstat.nstat + 1 : 1;
-	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
-	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
-	s->st_size = d->length;
-	s->st_blksize = msize - IOHDRSZ;
-	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
-	s->st_atime = d->atime;
-	s->st_mtime = s->st_ctime = d->mtime;
-	s->st_rdev = 0;
-	free(d);
+	hashdir(f->path, d, PUT);
+	dir2stat(s, d);
 	return 0;
 }
 
@@ -500,3 +507,21 @@ fidclone(FFid *f)
 	newf->qid = *rwalk.wqid;
 	return newf;
 }
+
+Dir*
+hashdir(char *path, Dir *d, int act)
+{
+	return NULL;
+}
+
+int
+getstat(struct stat *st, char *path)
+{
+	Dir	*d;
+
+	if((d = hashdir(path, NULL, GET)) == NULL)
+		return -1;
+	dir2stat(st, d);
+	return 0;
+}
+

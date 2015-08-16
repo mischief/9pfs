@@ -3,7 +3,6 @@ typedef struct FFid	FFid;
 struct FFid
 {
 	FFid	*link;
-	FFid	*pathlink;
 	uchar	mode;
 	u32int	fid;
 	Qid	qid;
@@ -30,7 +29,7 @@ int	_9pdirread(FFid*, Dir**);
 void	init9p(int);
 
 FFid	*fidclone(FFid*);
-
+int	getstat(struct stat*, char*);
 void	*emalloc(size_t);
 void	*erealloc(void*, size_t);
 void	*ereallocarray(void*, size_t, size_t);

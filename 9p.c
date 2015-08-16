@@ -525,11 +525,17 @@ getstat(struct stat *st, const char *path)
 	dname = estrdup(path);
 	bname = strrchr(dname, '/');
 	*bname++ = '\0';
-	if((fd = lookupdir(dname, NULL, GET)) == NULL)
+	if((fd = lookupdir(dname, NULL, GET)) == NULL){
+		free(dname);
 		return -1;
+	}
 	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
 		if(strcmp(d->name, bname) == 0)
 			break;
+	}
+	if(d == fd->dirs + fd->ndirs){
+		free(dname);
+		return -1;
 	}
 	dir2stat(st, d);
 	free(dname);

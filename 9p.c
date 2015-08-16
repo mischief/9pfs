@@ -64,10 +64,11 @@ void		*tbuf, *rbuf;
 int		fids;
 int		msize;
 FFid		*fidhash[NHASH];
+FDir		*dirhash[NHASH];
 
-FFid		*lookup(u32int, int);
+FFid		*lookupfid(u32int, int);
 FFid		*uniqfid(void);
-Dir		*hashdir(char*, Dir*, int);
+FDir		*lookupdir(char*, Dir*, int);
 
 void
 init9p(int sfd)
@@ -160,7 +161,7 @@ _9pattach(FFid* ffid, FFid *afid)
 	tattach.msize = msize;
 	if(do9p(&tattach, &rattach) != 0)
 		errx(1, "Could not attach");
-	f = lookup(ffid->fid, PUT);
+	f = lookupfid(ffid->fid, PUT);
 	f->path = "/";
 	f->fid = tattach.fid;
 	f->qid = rattach.qid;
@@ -189,7 +190,7 @@ _9pwalkr(FFid *r, char *path)
 		twalk.newfid = f->fid;
 		twalk.nwname = s - twalk.wname;
 		if(do9p(&twalk, &rwalk) == -1 || rwalk.nwqid < twalk.nwname){
-			if(lookup(f->fid, DEL) != FDEL)
+			if(lookupfid(f->fid, DEL) != FDEL)
 				errx(1, "Fid %d not found in hash", f->fid);
 			free(bp);
 			return NULL;
@@ -256,8 +257,8 @@ _9pstat(FFid *f, struct stat *s)
 		free(d);
 		return -1;
 	}
-	hashdir(f->path, d, PUT);
 	dir2stat(s, d);
+	free(d);
 	return 0;
 }
 
@@ -318,7 +319,7 @@ _9premove(FFid *f)
 		_9pclunk(f);
 		return -1;
 	}
-	if(lookup(f->fid, DEL) != FDEL)
+	if(lookupfid(f->fid, DEL) != FDEL)
 		errx(1, "Fid %d not found in hash", f->fid);
 	return 0;
 }
@@ -382,6 +383,7 @@ _9pdirread(FFid *f, Dir **d)
 	ts = _9pread(f, buf, n);
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
+	lookupdir(f->path, *d, PUT);
 	return ts;
 }
 
@@ -434,7 +436,7 @@ _9pclunk(FFid *f)
 	memset(&tclunk, 0, sizeof(tclunk));
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
-	if(lookup(f->fid, DEL) != FDEL)
+	if(lookupfid(f->fid, DEL) != FDEL)
 		errx(1, "Fid %d not found in hash", f->fid);
 	return do9p(&tclunk, &rclunk);
 }
@@ -447,13 +449,13 @@ uniqfid(void)
 
 	do
 		fid = random();
-	while((f = lookup(fid, PUT)) == NULL);
+	while((f = lookupfid(fid, PUT)) == NULL);
 	return f;
 }
 	
 
 FFid*
-lookup(u32int fid, int act)
+lookupfid(u32int fid, int act)
 {
 	FFid	**floc, *f;
 
@@ -507,20 +509,30 @@ fidclone(FFid *f)
 	return newf;
 }
 
-Dir*
-hashdir(char *path, Dir *d, int act)
+FDir*
+lookupdir(char *path, Dir *d, int act)
 {
 	return NULL;
 }
 
 int
-getstat(struct stat *st, char *path)
+getstat(struct stat *st, const char *path)
 {
+	FDir	*fd;
 	Dir	*d;
+	char	*dname, *bname;
 
-	if((d = hashdir(path, NULL, GET)) == NULL)
+	dname = estrdup(path);
+	bname = strrchr(dname, '/');
+	*bname++ = '\0';
+	if((fd = lookupdir(dname, NULL, GET)) == NULL)
 		return -1;
+	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
+		if(strcmp(d->name, bname) == 0)
+			break;
+	}
 	dir2stat(st, d);
+	free(dname);
 	return 0;
 }
 

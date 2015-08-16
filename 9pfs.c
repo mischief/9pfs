@@ -34,13 +34,16 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	int	r;
 
-	if(getstat(st, (char*)path) == 0)
+	if(getstat(st, path) == 0)
 		return 0;
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
-	r = _9pstat(f, st);
+	if(_9pstat(f, st) == -1){
+		_9pclunk(f);
+		return -EIO;
+	}
 	_9pclunk(f);
-	return r;
+	return 0;
 }
 
 int

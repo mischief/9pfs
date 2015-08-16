@@ -1,4 +1,5 @@
 typedef struct FFid	FFid;
+typedef struct FDir	FDir;
 
 struct FFid
 {
@@ -9,6 +10,14 @@ struct FFid
 	u32int	iounit;
 	u64int	offset;
 	char	*path;
+};
+
+struct FDir
+{
+	FDir	*link;
+	char	*path;
+	Dir	*dirs;
+	int	ndirs;
 };
 
 FILE	*logfile;
@@ -29,7 +38,7 @@ int	_9pdirread(FFid*, Dir**);
 void	init9p(int);
 
 FFid	*fidclone(FFid*);
-int	getstat(struct stat*, char*);
+int	getstat(struct stat*, const char*);
 void	*emalloc(size_t);
 void	*erealloc(void*, size_t);
 void	*ereallocarray(void*, size_t, size_t);

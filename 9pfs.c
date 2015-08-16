@@ -32,7 +32,6 @@ int
 fsgetattr(const char *path, struct stat *st)
 {
 	FFid	*f;
-	int	r;
 
 	if(getstat(st, path) == 0)
 		return 0;

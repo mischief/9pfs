@@ -17,7 +17,7 @@
 #include "fcall.h"
 #include "9pfs.h"
 
-#define	 FDEL	((FFid*)~0)
+#define	 FDEL	((void*)~0)
 
 char *calls2str[] = {
   [Tversion]	"Tversion",
@@ -68,7 +68,7 @@ FDir		*dirhash[NHASH];
 
 FFid		*lookupfid(u32int, int);
 FFid		*uniqfid(void);
-FDir		*lookupdir(char*, Dir*, int);
+FDir		*lookupdir(char*, int);
 
 void
 init9p(int sfd)
@@ -376,6 +376,7 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 int
 _9pdirread(FFid *f, Dir **d)
 {
+	FDir	*fd;
 	uchar	buf[DIRMAX];
 	u32int	ts, n;
 
@@ -383,7 +384,10 @@ _9pdirread(FFid *f, Dir **d)
 	ts = _9pread(f, buf, n);
 	if(ts >= 0)
 		ts = dirpackage(buf, ts, d);
-	lookupdir(f->path, *d, PUT);
+	if((fd = lookupdir(f->path, PUT)) != NULL){
+		fd->dirs = *d;
+		fd->ndirs = ts;
+	}
 	return ts;
 }
 
@@ -479,9 +483,8 @@ lookupfid(u32int fid, int act)
 		if(*floc == NULL || *floc == rootfid)
 			return NULL;
 		f = *floc;
-		*floc = (*floc)->link;
-		if(f->path != NULL)
-			free(f->path);
+		*floc = f->link;
+		free(f->path);
 		free(f);
 		f = FDEL;
 		break;
@@ -509,10 +512,51 @@ fidclone(FFid *f)
 	return newf;
 }
 
-FDir*
-lookupdir(char *path, Dir *d, int act)
+int
+str2int(char *s)
 {
-	return NULL;
+	return 0;
+}
+
+FDir*
+lookupdir(char *path, int act)
+{
+	FDir	**fdloc, *fd;
+	int	h;
+
+	fd = NULL;
+	h = str2int(path);
+	for(fdloc = dirhash + h % NHASH; *fdloc != NULL; fdloc = &(*fdloc)->link){
+		if((*fdloc)->path == path)
+			break;
+	}
+	switch(act){
+	case GET:
+		fd = *fdloc;
+		break;
+	case PUT:
+		if(*fdloc != NULL){
+			fd = *fdloc;
+			free(fd->dirs);
+			fd->ndirs = 0;
+		}else{
+			fd = emalloc(sizeof(*fd));
+			fd->path = estrdup(path);
+			*fdloc = fd;
+		}
+		break;
+	case DEL:
+		if(*fdloc == NULL)
+			return NULL;
+		fd = *fdloc;
+		*fdloc = fd->link;
+		free(fd->path);
+		free(fd->dirs);
+		free(fd);
+		fd = FDEL;
+		break;
+	}
+	return fd;
 }
 
 int
@@ -525,7 +569,7 @@ getstat(struct stat *st, const char *path)
 	dname = estrdup(path);
 	bname = strrchr(dname, '/');
 	*bname++ = '\0';
-	if((fd = lookupdir(dname, NULL, GET)) == NULL){
+	if((fd = lookupdir(dname, GET)) == NULL){
 		free(dname);
 		return -1;
 	}

@@ -146,7 +146,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	long	r;
+	int	r;
 	u32int	n;
 
 	f = (FFid*)ffi->fh;
@@ -171,8 +171,8 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	long	r;
-	u32int	n, s;
+	int	r;
+	u32int	n;
 
 	f = (FFid*)ffi->fh;
 	dprint("fswrite with mode %u\n", f->mode & O_ACCMODE);
@@ -212,7 +212,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
 	Dir		*d, *e;
-	long		n;
+	int		n;
 	struct stat	s;
 
 	ffd(data, ".", NULL, 0);

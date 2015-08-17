@@ -518,11 +518,11 @@ fidclone(FFid *f)
 	return newf;
 }
 
-int
+uint
 str2int(char *s)
 {
 	char	*p;
-	int	h;
+	uint	h;
 
 	h = 0;
 	for(p = s; *p != '\0'; p++)
@@ -534,7 +534,7 @@ FDir*
 lookupdir(char *path, int act)
 {
 	FDir	**fdloc, *fd;
-	int	h;
+	uint	h;
 
 	fd = NULL;
 	h = str2int(path);
@@ -552,11 +552,12 @@ lookupdir(char *path, int act)
 			free(fd->dirs);
 			fd->dirs = NULL;
 			fd->ndirs = 0;
+			dprint("lookupdir update fd with path %s\n", fd->path);
 		}else{
 			fd = emalloc(sizeof(*fd));
 			fd->path = estrdup(path);
 			*fdloc = fd;
-			dprint("lookupdir new fd with path %s\n", (*fdloc)->path);
+			dprint("lookupdir new fd with path %s\n", fd->path);
 		}
 		break;
 	case DEL:

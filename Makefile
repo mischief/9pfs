@@ -32,6 +32,10 @@ simplefuse:	junk/simplefuse.o
 
 cleannametest:	junk/cleannametest.o lib/cleanname.o
 	${CC} ${LDFLAGS} -o $@ junk/cleannametest.o lib/cleanname.o
+
+strcmptest:	junk/strcmptest.o
+	${CC} ${LDFLAGS} -o $@ junk/strcmptest.o
+
 	
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<

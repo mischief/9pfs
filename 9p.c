@@ -205,15 +205,16 @@ FFid*
 _9pwalk(const char *path)
 {
 	FFid	*f;
-	char	*cleanpath;
+	char	*pnew;
 
-	cleanpath = cleanname(estrdup(path));
-	if(strcmp(cleanpath, "/") == 0){
-		free(cleanpath);
+	pnew = estrdup(path);
+	if(strcmp(pnew, "/") == 0){
+		free(pnew);
 		return fidclone(rootfid);
 	}
-	if((f = _9pwalkr(rootfid, cleanpath+1)) != NULL)
-		f->path = cleanpath;
+	if((f = _9pwalkr(rootfid, pnew+1)) != NULL)
+		f->path = pnew;
+	dprint("_9pwalk done path given was %s, fid's path is %s\n", path, f->path);
 	return f;
 }
 
@@ -380,13 +381,17 @@ _9pdirread(FFid *f, Dir **d)
 	uchar	buf[DIRMAX];
 	u32int	ts, n;
 
+	dprint("_9pdirread\n");
 	n = f->iounit;
 	ts = _9pread(f, buf, n);
-	if(ts >= 0)
-		ts = dirpackage(buf, ts, d);
+	if(ts <= 0)
+		return ts;
+	ts = dirpackage(buf, ts, d);
+	dprint("_9pdirread about to lookupdir with path %s\n", f->path);
 	if((fd = lookupdir(f->path, PUT)) != NULL){
 		fd->dirs = *d;
 		fd->ndirs = ts;
+		dprint("_9pdirread new FDir with ndirs %d\n", fd->ndirs);
 	}
 	return ts;
 }
@@ -509,13 +514,20 @@ fidclone(FFid *f)
 	if(rwalk.nwqid != 0)
 		err(1, "fidclone was not zero");
 	newf->qid = *rwalk.wqid;
+	newf->path = estrdup(f->path);
 	return newf;
 }
 
 int
 str2int(char *s)
 {
-	return 0;
+	char	*p;
+	int	h;
+
+	h = 0;
+	for(p = s; *p != '\0'; p++)
+		h = h*31 + *p;
+	return h;
 }
 
 FDir*
@@ -527,7 +539,7 @@ lookupdir(char *path, int act)
 	fd = NULL;
 	h = str2int(path);
 	for(fdloc = dirhash + h % NHASH; *fdloc != NULL; fdloc = &(*fdloc)->link){
-		if((*fdloc)->path == path)
+		if(strcmp((*fdloc)->path, path) == 0)
 			break;
 	}
 	switch(act){
@@ -543,6 +555,7 @@ lookupdir(char *path, int act)
 			fd = emalloc(sizeof(*fd));
 			fd->path = estrdup(path);
 			*fdloc = fd;
+			dprint("lookupdir new fd with path %s\n", (*fdloc)->path);
 		}
 		break;
 	case DEL:
@@ -569,10 +582,12 @@ getstat(struct stat *st, const char *path)
 	dname = estrdup(path);
 	bname = strrchr(dname, '/');
 	*bname++ = '\0';
+	dprint("getstat dname is %s bname is %s\n", dname, bname);
 	if((fd = lookupdir(dname, GET)) == NULL){
 		free(dname);
 		return -1;
 	}
+	dprint("getstat fd found, path is %s, ndirs is %d\n", fd->path, fd->ndirs);
 	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
 		if(strcmp(d->name, bname) == 0)
 			break;
@@ -581,8 +596,8 @@ getstat(struct stat *st, const char *path)
 		free(dname);
 		return -1;
 	}
+	dprint("getstat path given was %s, dir found was %s\n", path, d->name);
 	dir2stat(st, d);
 	free(dname);
 	return 0;
 }
-

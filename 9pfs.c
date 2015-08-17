@@ -186,8 +186,9 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
-	FFid		*f;
+	FFid	*f;
 
+	dprint("fsopendir\n");
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
@@ -195,9 +196,11 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 		_9pclunk(f);
 		return -EIO;
 	}
-	if(!(f->qid.type & QTDIR))
+	if(!(f->qid.type & QTDIR)){
+		_9pclunk(f);
 		return -ENOTDIR;
-	ffi->fh = (uint64_t)f;
+	}
+	ffi->fh = (u64int)f;
 	return 0;
 }
 
@@ -212,6 +215,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	ffd(data, ".", NULL, 0);
 	ffd(data, "..", NULL, 0);
 	n = _9pdirread((FFid*)ffi->fh, &d);
+	dprint("fsreaddir returned from _9pdirread ndirs is %d\n", n);
 	for(e = d; e < d + n; e++){
 		s.st_ino = e->qid.path;
 		s.st_mode = e->mode & 0777;
@@ -290,16 +294,16 @@ usage(void)
 	exit(1);
 }
 
-int
+void
 dprint(char *fmt, ...)
 {
 	va_list	va;
 	int	r;
 
 	if(debug == 0)
-		return 0;
+		return;
 	va_start(va, fmt);
 	r = vfprintf(logfile, fmt, va);
 	va_end(va);
-	return r;
+	return;
 }

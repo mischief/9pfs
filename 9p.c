@@ -193,6 +193,7 @@ _9pwalkr(FFid *r, char *path)
 			if(lookupfid(f->fid, DEL) != FDEL)
 				errx(1, "Fid %d not found in hash", f->fid);
 			free(bp);
+			dprint("_9pwalkr path not found %s\n", path);
 			return NULL;
 		}
 	}
@@ -214,7 +215,6 @@ _9pwalk(const char *path)
 	}
 	if((f = _9pwalkr(rootfid, pnew+1)) != NULL)
 		f->path = pnew;
-	dprint("_9pwalk done path given was %s, fid's path is %s\n", path, f->path);
 	return f;
 }
 
@@ -591,10 +591,12 @@ getstat(struct stat *st, const char *path)
 	}
 	dprint("getstat fd found, path is %s, ndirs is %d\n", fd->path, fd->ndirs);
 	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
+		dprint("getstat in search loop\n");
 		if(strcmp(d->name, bname) == 0)
 			break;
 	}
 	if(d == fd->dirs + fd->ndirs){
+		dprint("getstat bname %s not found\n", bname);
 		free(dname);
 		return -1;
 	}

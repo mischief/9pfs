@@ -356,3 +356,9 @@ sys     0m0.050s
 real    0m11.999s
 user    0m0.003s
 sys     0m0.047s
+
+getstat dname is /usr bname is ben
+getstat fd found, path is /usr, ndirs is 2
+getstat path given was /usr/ben, dir found was ben
+getstat dname is /usr/ben bname is yod*
+getstat fd found, path is /usr/ben, ndirs is 11

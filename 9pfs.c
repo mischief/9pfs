@@ -35,8 +35,10 @@ fsgetattr(const char *path, struct stat *st)
 
 	if(getstat(st, path) == 0)
 		return 0;
-	if((f = _9pwalk(path)) == NULL)
+	if((f = _9pwalk(path)) == NULL){
+		dprint("fsgetattr path %s not found\n", path);
 		return -ENOENT;
+	}
 	if(_9pstat(f, st) == -1){
 		_9pclunk(f);
 		return -EIO;

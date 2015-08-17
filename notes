@@ -301,3 +301,58 @@ Printf
 Your printf/fprintf debugging code will only work if you run with the -f switch. Otherwise, Fuse disconnects stdout and stderr.
 Unimplemented functions
 It is very tempting to just leave functions undefined if your filesystem doesn't need them, or if you just haven't gotten around to writing them yet. Don't. If a function isn't listed in your fuse_operations struct, Fuse will silently generate a failure when it is called, and you'll never find out that you need to write it. Instead, write every unimplemented function as a stub that prints a message to stderr and returns an error code. When you see the message, you'll know what extra functions you need to write.
+
+
+segfaulting:
+
+1       ./usr/ben/www/werc/sites/codigo.co/code/asm
+du: cannot access ‘./usr/ben/www/werc/sites/codigo.co/code/Knuth’: Transport endpoint is not connected
+40      ./usr/ben/www/werc/sites/codigo.co/code
+du: cannot access ‘./usr/ben/www/werc/sites/codigo.co/dougfacts’: Transport endpoint is not connected
+du: fts_read failed: ./usr/ben/www/werc/sites/codigo.co: Transport endpoint is not connected
+
+
+opendir flags: 0x38800 /usr/ben/www/werc/sites/codigo.co/code/asm
+   opendir[27893248] flags: 0x38800 /usr/ben/www/werc/sites/codigo.co/code/asm
+   unique: 558, success, outsize: 32
+unique: 559, opcode: READDIR (28), nodeid: 339, insize: 80, pid: 19978
+readdir[27893248] from 0
+Segmentation fault (core dumped)
+
+getstat path given was /usr/ben/www/werc/sites/codigo.co/code/Unix_Shell/swiftmarks/_header.md, dir found was _header.md
+getstat dname is /usr/ben/www/werc/sites/codigo.co/code/Unix_Shell bname is _header.md
+getstat fd found, path is /usr/ben/www/werc/sites/codigo.co/code/Unix_Shell, ndirs is 3
+getstat path given was /usr/ben/www/werc/sites/codigo.co/code/Unix_Shell/_header.md, dir found was _header.md
+getstat dname is /usr/ben/www/werc/sites/codigo.co/code bname is asm
+getstat fd found, path is /usr/ben/www/werc/sites/codigo.co/code, ndirs is 6
+getstat path given was /usr/ben/www/werc/sites/codigo.co/code/asm, dir found was asm
+fsopendir
+_9pwalk done path given was /usr/ben/www/werc/sites/codigo.co/code/asm, fid's path is /usr/ben/www/werc/sites/codigo.co/code/asm
+_9pdirread
+_9pread on /usr/ben/www/werc/sites/codigo.co/code/asm with count 8168, offset 0, fid 1416577953
+Data returned was
+A with count 271
+_9pread returning file offset is 271, fid for file is 1416577953
+_9pdirread about to lookupdir with path /usr/ben/www/werc/sites/codigo.co/code/asm
+
+9pfs
+real    0m1.473s
+user    0m0.007s
+sys     0m0.027s
+real    0m1.467s
+user    0m0.013s
+sys     0m0.027s
+real    0m1.447s
+user    0m0.013s
+sys     0m0.023s
+
+9pfuse
+real    0m9.905s
+user    0m0.010s
+sys     0m0.033s
+real    0m12.016s
+user    0m0.000s
+sys     0m0.050s
+real    0m11.999s
+user    0m0.003s
+sys     0m0.047s

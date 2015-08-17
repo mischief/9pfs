@@ -298,12 +298,11 @@ void
 dprint(char *fmt, ...)
 {
 	va_list	va;
-	int	r;
 
 	if(debug == 0)
 		return;
 	va_start(va, fmt);
-	r = vfprintf(logfile, fmt, va);
+	vfprintf(logfile, fmt, va);
 	va_end(va);
 	return;
 }

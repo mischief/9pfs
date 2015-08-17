@@ -550,6 +550,7 @@ lookupdir(char *path, int act)
 		if(*fdloc != NULL){
 			fd = *fdloc;
 			free(fd->dirs);
+			fd->dirs = NULL;
 			fd->ndirs = 0;
 		}else{
 			fd = emalloc(sizeof(*fd));

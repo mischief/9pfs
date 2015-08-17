@@ -519,7 +519,7 @@ fidclone(FFid *f)
 }
 
 uint
-str2int(char *s)
+strkey(char *s)
 {
 	char	*p;
 	uint	h;
@@ -537,7 +537,7 @@ lookupdir(char *path, int act)
 	uint	h;
 
 	fd = NULL;
-	h = str2int(path);
+	h = strkey(path);
 	for(fdloc = dirhash + h % NHASH; *fdloc != NULL; fdloc = &(*fdloc)->link){
 		if(strcmp((*fdloc)->path, path) == 0)
 			break;

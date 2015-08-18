@@ -113,10 +113,12 @@ fsrename(const char *opath, const char *npath)
 	}
 	d->name = bname;
 	if(_9pwstat(f, d) == -1){
+		_9pclunk(f);
 		free(dname);
 		free(d);
 		return -EACCES;
 	}
+	_9pclunk(f);
 	free(dname);
 	free(d);
 	return 0;
@@ -156,13 +158,17 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 			*bname++ = '\0';
 			f = _9pwalk(dname);
 		}
-		if(f == NULL)
+		if(f == NULL){
+			free(dname);
 			return -ENOENT;
+		}
 		dprint("fscreate with perm %o and access %o\n", perm, ffi->flags&O_ACCMODE);
 		f->mode = ffi->flags & O_ACCMODE;
 		f = _9pcreate(f, bname, perm, 0);
-		if(f == NULL)
+		if(f == NULL){
+			free(dname);
 			return -EIO;
+		}
 	}else{
 		if(ffi->flags | O_EXCL){
 			_9pclunk(f);

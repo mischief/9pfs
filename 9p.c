@@ -213,8 +213,11 @@ _9pwalk(const char *path)
 		free(pnew);
 		return fidclone(rootfid);
 	}
-	if((f = _9pwalkr(rootfid, pnew+1)) != NULL)
-		f->path = pnew;
+	if((f = _9pwalkr(rootfid, pnew+1)) == NULL){
+		free(pnew);
+		return NULL;
+	}
+	f->path = pnew;
 	return f;
 }
 
@@ -535,8 +538,10 @@ fidclone(FFid *f)
 	twalk.fid = f->fid;
 	twalk.newfid = newf->fid;
 	twalk.nwname = 0;
-	if(do9p(&twalk, &rwalk) != 0)
+	if(do9p(&twalk, &rwalk) == -1){
+		lookupfid(f->fid, DEL);
 		return NULL;
+	}
 	if(rwalk.nwqid != 0)
 		err(1, "fidclone was not zero");
 	newf->qid = *rwalk.wqid;

@@ -269,26 +269,31 @@ int
 fsmkdir(const char *path, mode_t perm)
 {
 	FFid	*f;
-	char	*dpath, *name;
+	char	*dname, *bname;
 
 	if((f = _9pwalk(path)) != NULL){
 		_9pclunk(f);
 		return -EEXIST;
 	}
-	dpath = estrdup(path);
-	if((name = strrchr(dpath, '/')) == dpath){
-		name++;
+	dname = estrdup(path);
+	if((bname = strrchr(dname, '/')) == dname){
+		bname++;
 		f = fidclone(rootfid);
 	}else{
-		*name++ = '\0';
-		f = _9pwalk(dpath);
+		*bname++ = '\0';
+		f = _9pwalk(dname);
 	}
-	if(f == NULL)
+	if(f == NULL){
+		free(dname)
 		return -ENOENT;
-	f = _9pcreate(f, name, perm, 1);
-	if(f == NULL)
+	}
+	f = _9pcreate(f, bname, perm, 1);
+	if(f == NULL){
+		free(dname);
 		return -EIO;
+	}
 	_9pclunk(f);
+	free(dname);
 	return 0;
 }
 

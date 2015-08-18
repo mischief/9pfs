@@ -284,7 +284,7 @@ fsmkdir(const char *path, mode_t perm)
 		f = _9pwalk(dname);
 	}
 	if(f == NULL){
-		free(dname)
+		free(dname);
 		return -ENOENT;
 	}
 	f = _9pcreate(f, bname, perm, 1);

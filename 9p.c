@@ -245,13 +245,13 @@ dir2stat(struct stat *s, Dir *d)
 Dir*
 _9pstat(FFid *f)
 {
-	Dir		*d;
-	Fcall		tstat, rstat;
+	Dir	*d;
+	Fcall	tstat, rstat;
 
 	memset(&tstat, 0, sizeof(tstat));
 	tstat.type = Tstat;
 	tstat.fid = f->fid;
-	if(do9p(&tstat, &rstat) != 0)
+	if(do9p(&tstat, &rstat) == -1)
 		return NULL;
 	d = emalloc(sizeof(*d) + rstat.nstat);
 	if(convM2D(rstat.stat, rstat.nstat, d, (char*)(d+1)) != rstat.nstat){
@@ -259,6 +259,32 @@ _9pstat(FFid *f)
 		return NULL;
 	}
 	return d;
+}
+
+int
+_9pwstat(FFid *f, Dir *d)
+{
+	Fcall	twstat, rwstat;
+	uchar	*st;
+	int	n;
+
+	n = sizeD2M(d);
+	st = emalloc(n);
+	if(convD2M(d, st, n) != n){
+		free(st);
+		return -1;
+	}
+	memset(&twstat, 0, sizeof(twstat));
+	twstat.type = Twstat;
+	twstat.fid = f->fid;
+	twstat.nstat = n;
+	twstat.stat = st;
+	if(do9p(&twstat, &rwstat) == -1){
+		free(st);
+		return -1;
+	}
+	free(st);
+	return 0;
 }
 
 int

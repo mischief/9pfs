@@ -27,6 +27,7 @@ FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
 FFid	*_9pwalkr(FFid*, char*);
 Dir	*_9pstat(FFid*);
+int	_9pwstat(FFid*, Dir*);
 int	_9pclunk(FFid*);
 int	_9popen(FFid*);
 FFid	*_9pcreate(FFid*, char*, int, int);

@@ -88,17 +88,17 @@ fstruncate(const char *path, off_t off)
 int
 fsrename(const char *opath, const char *npath)
 {
-	Dir	d;
+	Dir	*d;
 	FFid	*f;
 	char	*dname, *bname;
-	int	l;
+	int	n;
 
 	if((f = _9pwalk(opath)) == NULL)
 		return -ENOENT;
 	dname = estrdup(npath);
 	bname = strrchr(dname, '/');
-	l = bname - dname;
-	if(strncmp(opath, npath, l) != 0){
+	n = bname - dname;
+	if(strncmp(opath, npath, n) != 0){
 		free(dname);
 		return -EACCES;
 	}
@@ -107,6 +107,18 @@ fsrename(const char *opath, const char *npath)
 		free(dname);
 		return -ENOENT;
 	}
+	if((d = _9pstat(f)) == NULL){
+		free(dname);
+		return -EIO;
+	}
+	d->name = bname;
+	if(_9pwstat(f, d) == -1){
+		free(dname);
+		free(d);
+		return -EACCES;
+	}
+	free(dname);
+	free(d);
 	return 0;
 }	
 	
@@ -313,6 +325,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
 	.truncate =	fstruncate,
+	.rename =	fsrename,
 	.open =		fsopen,
 	.create =	fscreate,
 	.unlink =	fsunlink,

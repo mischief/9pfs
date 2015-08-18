@@ -242,8 +242,8 @@ dir2stat(struct stat *s, Dir *d)
 	s->st_rdev = 0;
 }	
 
-int
-_9pstat(FFid *f, struct stat *s)
+Dir*
+_9pstat(FFid *f)
 {
 	Dir		*d;
 	Fcall		tstat, rstat;
@@ -252,15 +252,13 @@ _9pstat(FFid *f, struct stat *s)
 	tstat.type = Tstat;
 	tstat.fid = f->fid;
 	if(do9p(&tstat, &rstat) != 0)
-		return -1;
+		return NULL;
 	d = emalloc(sizeof(*d) + rstat.nstat);
 	if(convM2D(rstat.stat, rstat.nstat, d, (char*)(d+1)) != rstat.nstat){
 		free(d);
-		return -1;
+		return NULL;
 	}
-	dir2stat(s, d);
-	free(d);
-	return 0;
+	return d;
 }
 
 int
@@ -576,8 +574,8 @@ lookupdir(char *path, int act)
 	return fd;
 }
 
-int
-getstat(struct stat *st, const char *path)
+Dir*
+isdircached(const char *path)
 {
 	FDir	*fd;
 	Dir	*d;
@@ -589,21 +587,19 @@ getstat(struct stat *st, const char *path)
 	dprint("getstat dname is %s bname is %s\n", dname, bname);
 	if((fd = lookupdir(dname, GET)) == NULL){
 		free(dname);
-		return -1;
+		return NULL;
 	}
 	dprint("getstat fd found, path is %s, ndirs is %d\n", fd->path, fd->ndirs);
 	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
-		dprint("getstat in search loop\n");
 		if(strcmp(d->name, bname) == 0)
 			break;
 	}
 	if(d == fd->dirs + fd->ndirs){
 		dprint("getstat bname %s not found\n", bname);
 		free(dname);
-		return -1;
+		return NULL;
 	}
 	dprint("getstat path given was %s, dir found was %s\n", path, d->name);
-	dir2stat(st, d);
 	free(dname);
-	return 0;
+	return d;
 }

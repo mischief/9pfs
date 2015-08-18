@@ -32,18 +32,23 @@ int
 fsgetattr(const char *path, struct stat *st)
 {
 	FFid	*f;
+	Dir	*d;
 
-	if(getstat(st, path) == 0)
+	if((d = isdircached(path)) != NULL){
+		dir2stat(st, d);
 		return 0;
+	}
 	if((f = _9pwalk(path)) == NULL){
 		dprint("fsgetattr path %s not found\n", path);
 		return -ENOENT;
 	}
-	if(_9pstat(f, st) == -1){
+	if((d = _9pstat(f)) == NULL){
 		_9pclunk(f);
 		return -EIO;
 	}
+	dir2stat(st, d);
 	_9pclunk(f);
+	free(d);
 	return 0;
 }
 
@@ -51,6 +56,17 @@ int
 fsrelease(const char *path, struct fuse_file_info *ffi)
 {
 	return _9pclunk((FFid*)ffi->fh);
+}
+
+int
+fsreleasedir(const char *path, struct fuse_file_info *ffi)
+{
+	FFid	*f;
+
+	f = (FFid*)ffi->fh;
+	if((f->qid.type & QTDIR) == 0)
+		return -ENOTDIR;
+	return _9pclunk(f);
 }
 
 int
@@ -68,6 +84,31 @@ fstruncate(const char *path, off_t off)
 	_9pclunk(f);
 	return 0;
 }
+
+int
+fsrename(const char *opath, const char *npath)
+{
+	Dir	d;
+	FFid	*f;
+	char	*dname, *bname;
+	int	l;
+
+	if((f = _9pwalk(opath)) == NULL)
+		return -ENOENT;
+	dname = estrdup(npath);
+	bname = strrchr(dname, '/');
+	l = bname - dname;
+	if(strncmp(opath, npath, l) != 0){
+		free(dname);
+		return -EACCES;
+	}
+	*bname++ = '\0';
+	if((f = _9pwalk(opath)) == NULL){
+		free(dname);
+		return -ENOENT;
+	}
+	return 0;
+}	
 	
 int
 fsopen(const char *path, struct fuse_file_info *ffi)
@@ -92,22 +133,22 @@ int
 fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	char	*name, *dpath;
+	char	*dname, *bname;
 
 	if((f = _9pwalk(path)) == NULL){
-		dpath = estrdup(path);
-		if((name = strrchr(dpath, '/')) == dpath){
-			name++;
+		dname = estrdup(path);
+		if((bname = strrchr(dname, '/')) == dname){
+			bname++;
 			f = fidclone(rootfid);
 		}else{
-			*name++ = '\0';
-			f = _9pwalk(dpath);
+			*bname++ = '\0';
+			f = _9pwalk(dname);
 		}
 		if(f == NULL)
 			return -ENOENT;
 		dprint("fscreate with perm %o and access %o\n", perm, ffi->flags&O_ACCMODE);
 		f->mode = ffi->flags & O_ACCMODE;
-		f = _9pcreate(f, name, perm, 0);
+		f = _9pcreate(f, bname, perm, 0);
 		if(f == NULL)
 			return -EIO;
 	}else{
@@ -234,6 +275,22 @@ fsmkdir(const char *path, mode_t perm)
 }
 
 int
+fsrmdir(const char *path)
+{
+	FFid	*f;
+
+	if((f = _9pwalk(path)) == NULL)
+		return -ENOENT;
+	if((f->qid.type & QTDIR) == 0){
+		_9pclunk(f);
+		return -ENOTDIR;
+	}
+	if(_9premove(f) == -1)
+		return -EIO;
+	return 0;
+}
+
+int
 fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
@@ -263,8 +320,10 @@ struct fuse_operations fsops = {
 	.write =	fswrite,
 	.opendir = 	fsopendir,
 	.mkdir =	fsmkdir,
+	.rmdir =	fsrmdir,
 	.readdir = 	fsreaddir,
-	.release =	fsrelease
+	.release =	fsrelease,
+	.releasedir =	fsreleasedir
 };
 
 int

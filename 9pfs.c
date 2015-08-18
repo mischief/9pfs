@@ -89,13 +89,13 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 }
 
 int
-fscreate(const char *path, mode_t perms, struct fuse_file_info *ffi)
+fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 	char	*name, *dpath;
 
 	if((f = _9pwalk(path)) == NULL){
-		dpath = cleanname(estrdup(path));
+		dpath = estrdup(path);
 		if((name = strrchr(dpath, '/')) == dpath){
 			name++;
 			f = fidclone(rootfid);
@@ -104,10 +104,10 @@ fscreate(const char *path, mode_t perms, struct fuse_file_info *ffi)
 			f = _9pwalk(dpath);
 		}
 		if(f == NULL)
-			return -EIO;
-		dprint("fscreate with perms %o and access %o\n", perms, ffi->flags&O_ACCMODE);
+			return -ENOENT;
+		dprint("fscreate with perm %o and access %o\n", perm, ffi->flags&O_ACCMODE);
 		f->mode = ffi->flags & O_ACCMODE;
-		f = _9pcreate(f, name, perms);
+		f = _9pcreate(f, name, perm, 0);
 		if(f == NULL)
 			return -EIO;
 	}else{
@@ -207,6 +207,33 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 }
 
 int
+fsmkdir(const char *path, mode_t perm)
+{
+	FFid	*f;
+	char	*dpath, *name;
+
+	if((f = _9pwalk(path)) != NULL){
+		_9pclunk(f);
+		return -EEXIST;
+	}
+	dpath = estrdup(path);
+	if((name = strrchr(dpath, '/')) == dpath){
+		name++;
+		f = fidclone(rootfid);
+	}else{
+		*name++ = '\0';
+		f = _9pwalk(dpath);
+	}
+	if(f == NULL)
+		return -ENOENT;
+	f = _9pcreate(f, name, perm, 1);
+	if(f == NULL)
+		return -EIO;
+	_9pclunk(f);
+	return 0;
+}
+
+int
 fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
@@ -235,6 +262,7 @@ struct fuse_operations fsops = {
 	.read =		fsread,
 	.write =	fswrite,
 	.opendir = 	fsopendir,
+	.mkdir =	fsmkdir,
 	.readdir = 	fsreaddir,
 	.release =	fsrelease
 };

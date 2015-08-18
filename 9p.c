@@ -283,11 +283,13 @@ _9popen(FFid *f)
 }
 
 FFid*
-_9pcreate(FFid *f, char *name, int perm)
+_9pcreate(FFid *f, char *name, int perm, int isdir)
 {
 	Fcall	tcreate, rcreate;
 
 	perm &= 0777;
+	if(isdir)
+		perm |= DMDIR;
 	memset(&tcreate, 0, sizeof(tcreate));
 	tcreate.type = Tcreate;
 	tcreate.fid = f->fid;

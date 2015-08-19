@@ -24,6 +24,7 @@ enum
 	MSIZE = 8192
 };
 
+int	srvfd;
 FFid	*rootfid;
 FFid	*authfid;
 int	debug;
@@ -40,16 +41,16 @@ fsgetattr(const char *path, struct stat *st)
 		dir2stat(st, d);
 		return 0;
 	}
-	if((f = _9pwalk(path)) == NULL){
+	if((f = _9pwalk(srvfd, path)) == NULL){
 		dprint("fsgetattr path %s not found\n", path);
 		return -ENOENT;
 	}
-	if((d = _9pstat(f)) == NULL){
-		_9pclunk(f);
+	if((d = _9pstat(srvfd, f)) == NULL){
+		_9pclunk(srvfd, f);
 		return -EIO;
 	}
 	dir2stat(st, d);
-	_9pclunk(f);
+	_9pclunk(srvfd, f);
 	free(d);
 	return 0;
 }
@@ -57,7 +58,7 @@ fsgetattr(const char *path, struct stat *st)
 int
 fsrelease(const char *path, struct fuse_file_info *ffi)
 {
-	return _9pclunk((FFid*)ffi->fh);
+	return _9pclunk(srvfd, (FFid*)ffi->fh);
 }
 
 int
@@ -68,7 +69,7 @@ fsreleasedir(const char *path, struct fuse_file_info *ffi)
 	f = (FFid*)ffi->fh;
 	if((f->qid.type & QTDIR) == 0)
 		return -ENOTDIR;
-	return _9pclunk(f);
+	return _9pclunk(srvfd, f);
 }
 
 int
@@ -76,14 +77,14 @@ fstruncate(const char *path, off_t off)
 {
 	FFid	*f;
 
-	if((f = _9pwalk(path)) == NULL)
+	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
 	f->mode = OWRITE | OTRUNC;
-	if(_9popen(f) == -1){
-		_9pclunk(f);
+	if(_9popen(srvfd, f) == -1){
+		_9pclunk(srvfd, f);
 		return -EIO;
 	}
-	_9pclunk(f);
+	_9pclunk(srvfd, f);
 	return 0;
 }
 
@@ -95,7 +96,7 @@ fsrename(const char *opath, const char *npath)
 	char	*dname, *bname;
 	int	n;
 
-	if((f = _9pwalk(opath)) == NULL)
+	if((f = _9pwalk(srvfd, opath)) == NULL)
 		return -ENOENT;
 	dname = estrdup(npath);
 	bname = strrchr(dname, '/');
@@ -105,22 +106,22 @@ fsrename(const char *opath, const char *npath)
 		return -EACCES;
 	}
 	*bname++ = '\0';
-	if((f = _9pwalk(opath)) == NULL){
+	if((f = _9pwalk(srvfd, opath)) == NULL){
 		free(dname);
 		return -ENOENT;
 	}
-	if((d = _9pstat(f)) == NULL){
+	if((d = _9pstat(srvfd, f)) == NULL){
 		free(dname);
 		return -EIO;
 	}
 	d->name = bname;
-	if(_9pwstat(f, d) == -1){
-		_9pclunk(f);
+	if(_9pwstat(srvfd, f, d) == -1){
+		_9pclunk(srvfd, f);
 		free(dname);
 		free(d);
 		return -EACCES;
 	}
-	_9pclunk(f);
+	_9pclunk(srvfd, f);
 	free(dname);
 	free(d);
 	return 0;
@@ -132,13 +133,13 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 	FFid	*f;
 
 	dprint("fsopen on %s\n", path);
-	if((f = _9pwalk(path)) == NULL)
+	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
 	if(ffi->flags & O_TRUNC)
 		f->mode |= OTRUNC;
-	if(_9popen(f) == -1){
-		_9pclunk(f);
+	if(_9popen(srvfd, f) == -1){
+		_9pclunk(srvfd, f);
 		return -EIO;
 	}
 	ffi->fh = (u64int)f;
@@ -151,14 +152,14 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 	FFid	*f;
 	char	*dname, *bname;
 
-	if((f = _9pwalk(path)) == NULL){
+	if((f = _9pwalk(srvfd, path)) == NULL){
 		dname = estrdup(path);
 		if((bname = strrchr(dname, '/')) == dname){
 			bname++;
-			f = fidclone(rootfid);
+			f = fidclone(srvfd, rootfid);
 		}else{
 			*bname++ = '\0';
-			f = _9pwalk(dname);
+			f = _9pwalk(srvfd, dname);
 		}
 		if(f == NULL){
 			free(dname);
@@ -166,19 +167,19 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 		}
 		dprint("fscreate with perm %o and access %o\n", perm, ffi->flags&O_ACCMODE);
 		f->mode = ffi->flags & O_ACCMODE;
-		f = _9pcreate(f, bname, perm, 0);
+		f = _9pcreate(srvfd, f, bname, perm, 0);
 		if(f == NULL){
 			free(dname);
 			return -EIO;
 		}
 	}else{
 		if(ffi->flags | O_EXCL){
-			_9pclunk(f);
+			_9pclunk(srvfd, f);
 			return -EEXIST;
 		}
 		f->mode = ffi->flags & O_ACCMODE;
-		if(_9popen(f) == -1){
-			_9pclunk(f);
+		if(_9popen(srvfd, f) == -1){
+			_9pclunk(srvfd, f);
 			return -EIO;
 		}
 	}
@@ -191,9 +192,9 @@ fsunlink(const char *path)
 {
 	FFid	*f;
 
-	if((f = _9pwalk(path)) == NULL)
+	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
-	if(_9premove(f) == -1)
+	if(_9premove(srvfd, f) == -1)
 		return -EIO;
 	return 0;
 }
@@ -212,7 +213,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 		return -EACCES;
 	f->offset = off;
 	n = 0;
-	while((r = _9pread(f, buf+n, size)) > 0){
+	while((r = _9pread(srvfd, f, buf+n, size)) > 0){
 		dprint("In fsread loop r is %d: %*s\n", r, r, buf+n);
 		size -= r;
 		n += r;
@@ -237,7 +238,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 		return -EACCES;
 	f->offset = off;
 	n = 0;
-	while((r = _9pwrite(f, (char*)buf+n, size)) > 0){
+	while((r = _9pwrite(srvfd, f, (char*)buf+n, size)) > 0){
 		size -= r;
 		n += r;
 	}
@@ -252,15 +253,15 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	FFid	*f;
 
 	dprint("fsopendir\n");
-	if((f = _9pwalk(path)) == NULL)
+	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
-	if(_9popen(f) == -1){
-		_9pclunk(f);
+	if(_9popen(srvfd, f) == -1){
+		_9pclunk(srvfd, f);
 		return -EIO;
 	}
 	if(!(f->qid.type & QTDIR)){
-		_9pclunk(f);
+		_9pclunk(srvfd, f);
 		return -ENOTDIR;
 	}
 	ffi->fh = (u64int)f;
@@ -273,28 +274,28 @@ fsmkdir(const char *path, mode_t perm)
 	FFid	*f;
 	char	*dname, *bname;
 
-	if((f = _9pwalk(path)) != NULL){
-		_9pclunk(f);
+	if((f = _9pwalk(srvfd, path)) != NULL){
+		_9pclunk(srvfd, f);
 		return -EEXIST;
 	}
 	dname = estrdup(path);
 	if((bname = strrchr(dname, '/')) == dname){
 		bname++;
-		f = fidclone(rootfid);
+		f = fidclone(srvfd, rootfid);
 	}else{
 		*bname++ = '\0';
-		f = _9pwalk(dname);
+		f = _9pwalk(srvfd, dname);
 	}
 	if(f == NULL){
 		free(dname);
 		return -ENOENT;
 	}
-	f = _9pcreate(f, bname, perm, 1);
+	f = _9pcreate(srvfd, f, bname, perm, 1);
 	if(f == NULL){
 		free(dname);
 		return -EIO;
 	}
-	_9pclunk(f);
+	_9pclunk(srvfd, f);
 	free(dname);
 	return 0;
 }
@@ -304,13 +305,13 @@ fsrmdir(const char *path)
 {
 	FFid	*f;
 
-	if((f = _9pwalk(path)) == NULL)
+	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
 	if((f->qid.type & QTDIR) == 0){
-		_9pclunk(f);
+		_9pclunk(srvfd, f);
 		return -ENOTDIR;
 	}
-	if(_9premove(f) == -1)
+	if(_9premove(srvfd, f) == -1)
 		return -EIO;
 	return 0;
 }
@@ -325,7 +326,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 	ffd(data, ".", NULL, 0);
 	ffd(data, "..", NULL, 0);
-	n = _9pdirread((FFid*)ffi->fh, &d);
+	n = _9pdirread(srvfd, (FFid*)ffi->fh, &d);
 	dprint("fsreaddir returned from _9pdirread ndirs is %d\n", n);
 	for(e = d; e < d + n; e++){
 		s.st_ino = e->qid.path;
@@ -358,7 +359,7 @@ main(int argc, char *argv[])
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
 	char			logstr[100], *fusearg[6], **fargp, *keypattern;
-	int			srvfd, ch, noauth;
+	int			authfd, ch, noauth;
 
 	keypattern = NULL;
 	fargp = fusearg;
@@ -400,19 +401,19 @@ main(int argc, char *argv[])
 	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
 		err(1, "Could not connect to %s", p9addr.sun_path);
 
-	init9p(srvfd);
-	_9pversion(MSIZE);
+	init9p();
+	_9pversion(srvfd, MSIZE);
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	if(noauth)
 		afid.fid = NOFID;
 	else{
-		afid.fid = 1;
-		authfid = _9pauth(&afid);
-		if(auth_proxy(srvfd, auth_getkey, "proto=p9any role=client %s", keypattern) == nil)
+		authfd = fauth(srvfd, NULL);
+		if(auth_proxy(authfd, auth_getkey, "proto=p9any role=client %s", keypattern) == nil)
 			errx(1, "Could not establish authentication");
+		close(authfd);
 	}
-	rootfid = _9pattach(&rfid, &afid);
+	rootfid = _9pattach(srvfd, &rfid, &afid);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }	

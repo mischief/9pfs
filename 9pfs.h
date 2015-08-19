@@ -22,26 +22,26 @@ struct FDir
 
 FILE	*logfile;
 
-int	_9pversion(u32int);
-FFid	*_9pauth(FFid*);
-FFid	*_9pattach(FFid*, FFid*);
-FFid	*_9pwalk(const char*);
-FFid	*_9pwalkr(FFid*, char*);
-Dir	*_9pstat(FFid*);
-int	_9pwstat(FFid*, Dir*);
-int	_9pclunk(FFid*);
-int	_9popen(FFid*);
-FFid	*_9pcreate(FFid*, char*, int, int);
-int	_9premove(FFid*);
-int	_9pread(FFid*, void*, u32int);
-int	_9pwrite(FFid*, void*, u32int);
-int	_9pdirread(FFid*, Dir**);
+void	init9p();
+int	_9pversion(int, u32int);
+FFid	*_9pauth(int, FFid*, char*);
+FFid	*_9pattach(int, FFid*, FFid*);
+FFid	*_9pwalk(int, const char*);
+FFid	*_9pwalkr(int, FFid*, char*);
+FFid	*fidclone(int, FFid*);
+Dir	*_9pstat(int, FFid*);
+int	_9pwstat(int, FFid*, Dir*);
+int	_9pclunk(int, FFid*);
+int	_9popen(int, FFid*);
+FFid	*_9pcreate(int, FFid*, char*, int, int);
+int	_9premove(int, FFid*);
+int	_9pread(int, FFid*, void*, u32int);
+int	_9pwrite(int, FFid*, void*, u32int);
+int	_9pdirread(int, FFid*, Dir**);
 
-void	init9p(int);
+Dir	*isdircached(const char*);
 void	dir2stat(struct stat*, Dir*);
 
-FFid	*fidclone(FFid*);
-Dir	*isdircached(const char*);
 void	*emalloc(size_t);
 void	*erealloc(void*, size_t);
 void	*ereallocarray(void*, size_t, size_t);

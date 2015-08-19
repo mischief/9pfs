@@ -1,19 +1,18 @@
 #include <sys/types.h>
-#include <sys/stat.h>
+
+#include <unistd.h>
 
 #include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 
 #include "../libc.h"
 #include "../fcall.h"
-#include "../9pfs.h"
 #include "../auth.h"
 
-enum { 
-	ARgiveup = 100
+enum {
+	ARgiveup = 100,
 };
 
 static uchar*
@@ -29,7 +28,7 @@ gstring(uchar *p, uchar *ep, char **s)
 	p += BIT16SZ;
 	if(p+n > ep)
 		return nil;
-	*s = emalloc(n+1);
+	*s = malloc(n+1);
 	memmove((*s), p, n);
 	(*s)[n] = '\0';
 	p += n;
@@ -49,7 +48,7 @@ gcarray(uchar *p, uchar *ep, uchar **s, int *np)
 	p += BIT16SZ;
 	if(p+n > ep)
 		return nil;
-	*s = emalloc(n);
+	*s = malloc(n);
 	if(*s == nil)
 		return nil;
 	memmove((*s), p, n);
@@ -76,7 +75,7 @@ convM2AI(uchar *p, int n, AuthInfo **aip)
 	uchar *e = p+n;
 	AuthInfo *ai;
 
-	ai = emalloc(sizeof(*ai));
+	ai = mallocz(sizeof(*ai), 1);
 	if(ai == nil)
 		return nil;
 
@@ -98,7 +97,6 @@ auth_getinfo(AuthRpc *rpc)
 
 	if(auth_rpc(rpc, "authinfo", nil, 0) != ARok)
 		return nil;
-	a = nil;
 	if(convM2AI((uchar*)rpc->arg, rpc->narg, &a) == nil){
 		return nil;
 	}
@@ -124,17 +122,21 @@ dorpc(AuthRpc *rpc, char *verb, char *val, int len, AuthGetkey *getkey)
  *  this just proxies what the factotum tells it to.
  */
 AuthInfo*
-fauth_proxy(FFid *fid, AuthRpc *rpc, AuthGetkey *getkey, char *params)
+fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 {
 	char *buf;
 	int m, n, ret;
 	AuthInfo *a;
 
+	if(rpc == nil){
+		return nil;
+	}
+
 	if(dorpc(rpc, "start", params, strlen(params), getkey) != ARok){
 		return nil;
 	}
 
-	buf = emalloc(AuthRpcMax);
+	buf = malloc(AuthRpcMax);
 	if(buf == nil)
 		return nil;
 	for(;;){
@@ -142,9 +144,10 @@ fauth_proxy(FFid *fid, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 		case ARdone:
 			free(buf);
 			a = auth_getinfo(rpc);
+			/* no error, restore whatever was there */
 			return a;
 		case ARok:
-			if(_9pwrite(fid, rpc->arg, rpc->narg) != rpc->narg){
+			if(write(fd, rpc->arg, rpc->narg) != rpc->narg){
 				goto Error;
 			}
 			break;
@@ -152,18 +155,16 @@ fauth_proxy(FFid *fid, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 			n = 0;
 			memset(buf, 0, AuthRpcMax);
 			while((ret = dorpc(rpc, "write", buf, n, getkey)) == ARtoosmall){
-				if(atoi(rpc->arg) > AuthRpcMax)
+				m = atoi(rpc->arg);
+				if(m <= n || m > AuthRpcMax)
 					break;
-				m = _9pread(fid, buf+n, atoi(rpc->arg)-n);
-				if(m <= 0){
-					if(m == 0)
+				m = read(fd, buf + n, m - n);
+				if(m <= 0)
 					goto Error;
-				}
 				n += m;
 			}
-			if(ret != ARok){
+			if(ret != ARok)
 				goto Error;
-			}
 			break;
 		default:
 			goto Error;
@@ -175,26 +176,31 @@ Error:
 }
 
 AuthInfo*
-auth_proxy(FFid *fid, AuthGetkey *getkey, char *fmt, ...)
+auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...)
 {
+	int afd;
 	char *p;
 	va_list arg;
 	AuthInfo *ai;
 	AuthRpc *rpc;
 
-	quotefmtinstall();	/* just in case */
 	va_start(arg, fmt);
-	p = vsmprint(fmt, arg);
+	vasprintf(&p, fmt, arg);
 	va_end(arg);
 
-	rpc = auth_allocrpc();
-	if(rpc == nil){
+	ai = nil;
+	afd = open("/mnt/factotum/rpc", ORDWR);
+	if(afd < 0){
 		free(p);
 		return nil;
 	}
 
-	ai = fauth_proxy(fid, rpc, getkey, p);
+	rpc = auth_allocrpc(afd);
+	if(rpc){
+		ai = fauth_proxy(fd, rpc, getkey, p);
+		auth_freerpc(rpc);
+	}
+	close(afd);
 	free(p);
-	auth_freerpc(rpc);
 	return ai;
 }

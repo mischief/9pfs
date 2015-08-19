@@ -10,7 +10,8 @@ OBJS=9p.o\
 	lib/readn.o\
 	lib/cleanname.o\
 	lib/auth_proxy.o\
-	lib/auth_rpc.o
+	lib/auth_rpc.o\
+	lib/auth_getkey.o
 CC=	cc
 DEBUG=	-g
 CFLAGS=	-O2 -pipe\

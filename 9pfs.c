@@ -364,7 +364,7 @@ main(int argc, char *argv[])
 	struct sockaddr_in	inetaddr;
 	struct sockaddr		*p9addr;
 	char			logstr[100], *fusearg[6], **fargp;
-	int			afd, ch, doauth, unixsock, n;
+	int			afd, ch, doauth, unixsock, n, socksize;
 
 	fargp = fusearg;
 	*fargp++ = *argv;
@@ -409,11 +409,12 @@ main(int argc, char *argv[])
 		n = sizeof(unixaddr.sun_path);
 		strecpy(unixaddr.sun_path, unixaddr.sun_path+n, argv[0]);
 		p9addr = (struct sockaddr*)&unixaddr;
+		socksize = sizeof(unixaddr);
 	}else{
 		errx(1, "ipv4 not implemented");
 	}
 	srvfd = socket(p9addr->sa_family, SOCK_STREAM, 0);
-	if(connect(srvfd, (struct sockaddr*)p9addr, sizeof(*p9addr)) == -1)
+	if(connect(srvfd, (struct sockaddr*)p9addr, socksize) == -1)
 		err(1, "Could not connect to 9p server");
 
 	init9p();

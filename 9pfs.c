@@ -1,6 +1,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -359,20 +360,30 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	AuthInfo		*ai;
-	struct sockaddr_un	p9addr;
+	struct sockaddr_un	unixaddr;
+	struct sockaddr_in	inetaddr;
+	struct sockaddr		*p9addr;
 	char			logstr[100], *fusearg[6], **fargp;
-	int			afd, ch, noauth;
+	int			afd, ch, doauth, unixsock, n;
 
 	fargp = fusearg;
 	*fargp++ = *argv;
-	while((ch = getopt(argc, argv, ":dnk:")) != -1){
+	doauth = 0;
+	unixsock = 0;
+	while((ch = getopt(argc, argv, ":dnua:")) != -1){
 		switch(ch){
 		case 'd':
 			debug = 1;
 			*fargp++ = "-d";
 			break;
 		case 'n':
-			noauth = 1;
+			doauth = 0;
+			break;
+		case 'u':
+			unixsock = 1;
+			break;
+		case 'a':
+			doauth = 1;
 			break;
 		default:
 			usage();
@@ -393,26 +404,32 @@ main(int argc, char *argv[])
 	}
 
 	memset(&p9addr, 0, sizeof(p9addr));
-	p9addr.sun_family = AF_UNIX;
-	snprintf(p9addr.sun_path, sizeof(p9addr.sun_path), "/tmp/ns.ben.:0/%s", argv[0]);
-	srvfd = socket(p9addr.sun_family, SOCK_STREAM, 0);
-	if(connect(srvfd, (struct sockaddr*)&p9addr, sizeof(p9addr)) == -1)
-		err(1, "Could not connect to %s", p9addr.sun_path);
+	if(unixsock){
+		unixaddr.sun_family = AF_UNIX;
+		n = sizeof(unixaddr.sun_path);
+		strecpy(unixaddr.sun_path, unixaddr.sun_path+n, argv[0]);
+		p9addr = (struct sockaddr*)&unixaddr;
+	}else{
+		errx(1, "ipv4 not implemented");
+	}
+	srvfd = socket(p9addr->sa_family, SOCK_STREAM, 0);
+	if(connect(srvfd, (struct sockaddr*)p9addr, sizeof(*p9addr)) == -1)
+		err(1, "Could not connect to 9p server");
 
 	init9p();
 	_9pversion(srvfd, MSIZE);
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
-	if(noauth)
-		afid.fid = NOFID;
-	else{
+	if(doauth){
 		afid.fid = AUTHFID;
 		afd = fauth(srvfd, NULL);
 		ai = auth_proxy(afd, auth_getkey, "proto=p9any role=client");
-		if(ai == nil)
+		if(ai == NULL)
 			errx(1, "Could not establish authentication");
 		auth_freeAI(ai);
 		close(afd);
+	}else{
+		afid.fid = NOFID;
 	}
 	rootfid = _9pattach(srvfd, &rfid, &afid);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);

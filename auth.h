@@ -9,8 +9,6 @@ typedef struct	MSchapreply	MSchapreply;
 typedef struct	UserPasswd	UserPasswd;
 typedef struct	AuthRpc		AuthRpc;
 
-struct CFid;
-
 enum
 {
 	MAXCHLEN=	256,		/* max challenge length	*/
@@ -34,8 +32,7 @@ enum
 struct AuthRpc
 {
 	int afd;
-	struct CFid *afid;
-	char ibuf[AuthRpcMax];
+	char ibuf[AuthRpcMax+1];
 	char obuf[AuthRpcMax];
 	char *arg;
 	uint narg;
@@ -59,6 +56,7 @@ struct Chalstate
 	int	nresp;
 
 /* for implementation only */
+	int	afd;
 	AuthRpc	*rpc;			/* to factotum */
 	char	userbuf[MAXNAMELEN];	/* temp space if needed */
 	int	userinchal;		/* user was sent to obtain challenge */
@@ -116,10 +114,8 @@ Attr	*_mkattr(int, char*, char*, Attr*);
 Attr	*_parseattr(char*);
 char	*_strfindattr(Attr*, char*);
 
-extern AuthInfo*	fauth_proxy(FFid*, AuthRpc *rpc, AuthGetkey *getkey, char *params);
-extern AuthInfo*	auth_proxy(FFid*, AuthGetkey *getkey, char *fmt, ...);
-extern AuthInfo*	fsfauth_proxy(struct CFid*, AuthRpc *rpc, AuthGetkey *getkey, char *params);
-extern AuthInfo*	fsauth_proxy(struct CFid*, AuthGetkey *getkey, char *fmt, ...);
+extern AuthInfo*	fauth_proxy(int, AuthRpc *rpc, AuthGetkey *getkey, char *params);
+extern AuthInfo*	auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...);
 extern int		auth_getkey(char*);
 extern int		(*amount_getkey)(char*);
 extern void		auth_freeAI(AuthInfo *ai);
@@ -131,7 +127,7 @@ extern void		auth_freechal(Chalstate*);
 extern AuthInfo*	auth_userpasswd(char *user, char *passwd);
 extern UserPasswd*	auth_getuserpasswd(AuthGetkey *getkey, char*, ...);
 extern AuthInfo*	auth_getinfo(AuthRpc *rpc);
-extern AuthRpc*		auth_allocrpc(void);
+extern AuthRpc*		auth_allocrpc(int afd);
 extern Attr*		auth_attr(AuthRpc *rpc);
 extern void		auth_freerpc(AuthRpc *rpc);
 extern uint		auth_rpc(AuthRpc *rpc, char *verb, void *a, int n);

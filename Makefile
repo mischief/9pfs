@@ -8,7 +8,8 @@ OBJS=9p.o\
 	lib/read9pmsg.o\
 	lib/readn.o\
 	lib/cleanname.o\
-	lib/auth_proxy.o
+	lib/auth_proxy.o\
+	lib/auth_rpc.o
 CC=	cc
 DEBUG=	-g
 CFLAGS=	-O2 -pipe\

@@ -657,3 +657,19 @@ isdircached(const char *path)
 	free(dname);
 	return d;
 }
+
+int
+fauth(int fd, char *aname)
+{
+	char	*fbuf;
+	int	r, f, p[2];
+
+	fbuf = emalloc(msize);
+	pipe(p);
+	if((f = fork()) == -1)
+		err(1, "Could not fork");
+	if(f > 0)
+		return p[0];
+	for(;;)
+		while((r = read(p[1], fbuf, msize)) > 0)
+			_9pwrite(fd, fbuf, r);

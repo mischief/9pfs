@@ -92,3 +92,4 @@ struct Dir {
 
 long	readn(int, void*, long);
 char	*cleanname(char*);
+int	fauth(int fd, char *aname);

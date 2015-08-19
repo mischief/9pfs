@@ -409,7 +409,7 @@ main(int argc, char *argv[])
 	else{
 		afid.fid = 1;
 		authfid = _9pauth(&afid);
-		if(auth_proxy(authfid, auth_getkey, "proto=p9any role=client %s", keypattern) == nil)
+		if(auth_proxy(srvfd, auth_getkey, "proto=p9any role=client %s", keypattern) == nil)
 			errx(1, "Could not establish authentication");
 	}
 	rootfid = _9pattach(&rfid, &afid);

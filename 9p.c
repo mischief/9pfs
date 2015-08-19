@@ -16,6 +16,7 @@
 #include "libc.h"
 #include "fcall.h"
 #include "9pfs.h"
+#include "util.h"
 
 #define	 FDEL	((void*)~0)
 

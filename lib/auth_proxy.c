@@ -1,8 +1,11 @@
 #include <sys/types.h>
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <stdlib.h>
+#include <stdint.h>
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -10,6 +13,7 @@
 #include "../libc.h"
 #include "../fcall.h"
 #include "../auth.h"
+#include "../util.h"
 
 enum {
 	ARgiveup = 100,
@@ -75,7 +79,7 @@ convM2AI(uchar *p, int n, AuthInfo **aip)
 	uchar *e = p+n;
 	AuthInfo *ai;
 
-	ai = mallocz(sizeof(*ai), 1);
+	ai = emalloc(sizeof(*ai));
 	if(ai == nil)
 		return nil;
 

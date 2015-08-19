@@ -5,7 +5,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -32,7 +31,7 @@ gstring(uchar *p, uchar *ep, char **s)
 	p += BIT16SZ;
 	if(p+n > ep)
 		return nil;
-	*s = malloc(n+1);
+	*s = emalloc(n+1);
 	memmove((*s), p, n);
 	(*s)[n] = '\0';
 	p += n;
@@ -52,7 +51,7 @@ gcarray(uchar *p, uchar *ep, uchar **s, int *np)
 	p += BIT16SZ;
 	if(p+n > ep)
 		return nil;
-	*s = malloc(n);
+	*s = emalloc(n);
 	if(*s == nil)
 		return nil;
 	memmove((*s), p, n);
@@ -140,7 +139,7 @@ fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 		return nil;
 	}
 
-	buf = malloc(AuthRpcMax);
+	buf = emalloc(AuthRpcMax);
 	if(buf == nil)
 		return nil;
 	for(;;){

@@ -1,3 +1,9 @@
+enum
+{
+	ROOTFID,
+	AUTHFID
+};
+
 typedef struct FFid	FFid;
 typedef struct FDir	FDir;
 

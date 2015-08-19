@@ -358,11 +358,11 @@ int
 main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
+	AuthInfo		*ai;
 	struct sockaddr_un	p9addr;
-	char			logstr[100], *fusearg[6], **fargp, *keypattern;
-	int			authfd, ch, noauth;
+	char			logstr[100], *fusearg[6], **fargp;
+	int			afd, ch, noauth;
 
-	keypattern = NULL;
 	fargp = fusearg;
 	*fargp++ = *argv;
 	while((ch = getopt(argc, argv, ":dnk:")) != -1){
@@ -373,9 +373,6 @@ main(int argc, char *argv[])
 			break;
 		case 'n':
 			noauth = 1;
-			break;
-		case 'k':
-			keypattern = optarg;
 			break;
 		default:
 			usage();
@@ -409,10 +406,13 @@ main(int argc, char *argv[])
 	if(noauth)
 		afid.fid = NOFID;
 	else{
-		authfd = fauth(srvfd, NULL);
-		if(auth_proxy(authfd, auth_getkey, "proto=p9any role=client %s", keypattern) == nil)
+		afid.fid = AUTHFID;
+		afd = fauth(srvfd, NULL);
+		ai = auth_proxy(afd, auth_getkey, "proto=p9any role=client");
+		if(ai == nil)
 			errx(1, "Could not establish authentication");
-		close(authfd);
+		auth_freeAI(ai);
+		close(afd);
 	}
 	rootfid = _9pattach(srvfd, &rfid, &afid);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);

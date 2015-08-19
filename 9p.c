@@ -665,7 +665,7 @@ fauth(int fd, char *aname)
 	int	r, pid, p[2];
 	FFid	afid, *af;
 
-	afid.fid = 1;
+	afid.fid = AUTHFID;
 	af = _9pauth(fd, &afid, aname);
 	pipe(p);
 	if((pid = fork()) == -1)

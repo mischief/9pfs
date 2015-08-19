@@ -8,13 +8,15 @@ OBJS=9p.o\
 	lib/read9pmsg.o\
 	lib/readn.o\
 	lib/cleanname.o\
-	lib/auth_proxy.o
+	lib/auth_proxy.o\
+	lib/auth_rpc.o
 CC=	cc
 DEBUG=	-g
 CFLAGS=	-O2 -pipe\
 		${DEBUG} -Wall\
 		-D_FILE_OFFSET_BITS=64\
-		-DFUSE_USE_VERSION=26
+		-DFUSE_USE_VERSION=26\
+		-D_GNU_SOURCE
 LDADD=	-lfuse
 
 all:	${TARG}

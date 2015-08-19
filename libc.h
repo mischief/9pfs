@@ -1,5 +1,7 @@
 #define nil NULL
 
+#define	nelem(x)	(sizeof(x)/sizeof((x)[0]))
+
 #define	ERRMAX	256
 #define	OREAD	0	/* open for read */
 #define	OWRITE	1	/* write */

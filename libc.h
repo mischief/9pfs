@@ -1,5 +1,6 @@
 #define nil NULL
 
+#define	ERRMAX	256
 #define	OREAD	0	/* open for read */
 #define	OWRITE	1	/* write */
 #define	ORDWR	2	/* read and write */

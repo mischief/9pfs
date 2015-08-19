@@ -17,6 +17,7 @@
 #include "libc.h"
 #include "fcall.h"
 #include "9pfs.h"
+#include "auth.h"
 
 enum
 {
@@ -24,6 +25,7 @@ enum
 };
 
 FFid	*rootfid;
+FFid	*authfid;
 int	debug;
 
 void	usage(void);
@@ -355,16 +357,23 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	struct sockaddr_un	p9addr;
-	char			logstr[100], *fusearg[6], **fargp;
-	int			srvfd, ch;
+	char			logstr[100], *fusearg[6], **fargp, *keypattern;
+	int			srvfd, ch, noauth;
 
+	keypattern = NULL;
 	fargp = fusearg;
 	*fargp++ = *argv;
-	while((ch = getopt(argc, argv, ":d")) != -1){
+	while((ch = getopt(argc, argv, ":dnk:")) != -1){
 		switch(ch){
 		case 'd':
 			debug = 1;
 			*fargp++ = "-d";
+			break;
+		case 'n':
+			noauth = 1;
+			break;
+		case 'k':
+			keypattern = optarg;
 			break;
 		default:
 			usage();
@@ -395,11 +404,18 @@ main(int argc, char *argv[])
 	_9pversion(MSIZE);
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
-	afid.fid = NOFID;
+	if(noauth)
+		afid.fid = NOFID;
+	else{
+		afid.fid = 1;
+		authfid = _9pauth(&afid);
+		if(auth_proxy(authfid, auth_getkey, "proto=p9any role=client %s", keypattern) == nil)
+			errx(1, "Could not establish authentication");
+	}
 	rootfid = _9pattach(&rfid, &afid);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
-}
+}	
 
 void
 usage(void)

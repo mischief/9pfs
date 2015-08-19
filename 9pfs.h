@@ -23,6 +23,7 @@ struct FDir
 FILE	*logfile;
 
 int	_9pversion(u32int);
+FFid	*_9pauth(FFid*);
 FFid	*_9pattach(FFid*, FFid*);
 FFid	*_9pwalk(const char*);
 FFid	*_9pwalkr(FFid*, char*);

@@ -58,17 +58,17 @@ enum
 	NHASH = 1009
 };
 
-int		srvfd;
-FFid		*rootfid;
-void		*tbuf, *rbuf;
-int		fids;
-int		msize;
-FFid		*fidhash[NHASH];
-FDir		*dirhash[NHASH];
+int	srvfd;
+FFid	*rootfid;
+FFid	*authfid;
+void	*tbuf, *rbuf;
+int	msize;
+FFid	*fidhash[NHASH];
+FDir	*dirhash[NHASH];
 
-FFid		*lookupfid(u32int, int);
-FFid		*uniqfid(void);
-FDir		*lookupdir(char*, int);
+FFid	*lookupfid(u32int, int);
+FFid	*uniqfid(void);
+FDir	*lookupdir(char*, int);
 
 void
 init9p(int sfd)
@@ -145,6 +145,29 @@ _9pversion(u32int m)
 }
 
 FFid*
+_9pauth(FFid *afid)
+{
+	FFid	*f;
+	Fcall	tauth, rauth;
+	struct passwd	*pw;
+
+	memset(&tauth, 0, sizeof(tauth));
+	if((pw = getpwuid(getuid())) == NULL)
+		errx(1, "Could not get user");
+	tauth.type = Tauth;
+	tauth.afid = afid->fid;
+	tauth.uname = pw->pw_name;
+	if(do9p(&tauth, &rauth) == -1)
+		errx(1, "Could not auth");
+	f = lookupfid(afid->fid, PUT);
+	f->path = "AUTHFID";
+	f->fid = tauth.fid;
+	f->qid = rauth.aqid;
+	afid = f;
+	return f;
+}
+
+FFid*
 _9pattach(FFid* ffid, FFid *afid)
 {
 	FFid		*f;
@@ -159,7 +182,7 @@ _9pattach(FFid* ffid, FFid *afid)
 	tattach.afid = afid->fid;
 	tattach.uname = pw->pw_name;
 	tattach.msize = msize;
-	if(do9p(&tattach, &rattach) != 0)
+	if(do9p(&tattach, &rattach) == -1)
 		errx(1, "Could not attach");
 	f = lookupfid(ffid->fid, PUT);
 	f->path = "/";

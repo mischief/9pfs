@@ -92,6 +92,7 @@ struct Dir {
 	char	*ext;		/* extended info */
 } Dir;
 
+char	*strecpy(char*, char*, char*);
 long	readn(int, void*, long);
 char	*cleanname(char*);
 int	fauth(int fd, char *aname);

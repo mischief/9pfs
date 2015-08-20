@@ -693,7 +693,5 @@ fauth(int fd, char *aname)
 		if(pfd[0].revents & POLLHUP)
 			break;
 	}
-	if(r < 0)
-		err(1, "Bad read in fauth");
 	exit(0);
 }

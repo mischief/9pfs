@@ -1,7 +1,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+
 #include <netinet/in.h>
+#include <netdb.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -360,17 +362,18 @@ main(int argc, char *argv[])
 {
 	FFid			rfid, afid;
 	AuthInfo		*ai;
-	struct sockaddr_un	unixaddr;
-	struct sockaddr_in	inetaddr;
-	struct sockaddr		*p9addr;
-	char			logstr[100], *fusearg[6], **fargp;
-	int			afd, ch, doauth, unixsock, n, socksize;
+	struct sockaddr_un	uaddr;
+	struct sockaddr		*addr;
+	struct addrinfo		*ainfo;
+	char			logstr[100], *fusearg[6], **fargp, port[10];
+	int			afd, ch, doauth, uflag, n, slen, e;
 
 	fargp = fusearg;
 	*fargp++ = *argv;
 	doauth = 0;
-	unixsock = 0;
-	while((ch = getopt(argc, argv, ":dnua:")) != -1){
+	uflag = 0;
+	strecpy(port, port+sizeof(port), "564");
+	while((ch = getopt(argc, argv, ":dnuap:")) != -1){
 		switch(ch){
 		case 'd':
 			debug = 1;
@@ -380,10 +383,13 @@ main(int argc, char *argv[])
 			doauth = 0;
 			break;
 		case 'u':
-			unixsock = 1;
+			uflag = 1;
 			break;
 		case 'a':
 			doauth = 1;
+			break;
+		case 'p':
+			strecpy(port, port+sizeof(port), optarg);
 			break;
 		default:
 			usage();
@@ -403,19 +409,23 @@ main(int argc, char *argv[])
 		setlinebuf(logfile);
 	}
 
-	memset(&p9addr, 0, sizeof(p9addr));
-	if(unixsock){
-		unixaddr.sun_family = AF_UNIX;
-		n = sizeof(unixaddr.sun_path);
-		strecpy(unixaddr.sun_path, unixaddr.sun_path+n, argv[0]);
-		p9addr = (struct sockaddr*)&unixaddr;
-		socksize = sizeof(unixaddr);
+	if(uflag){
+		uaddr.sun_family = AF_UNIX;
+		n = sizeof(uaddr.sun_path);
+		strecpy(uaddr.sun_path, uaddr.sun_path+n, argv[0]);
+		addr = (struct sockaddr*)&uaddr;
+		slen = sizeof(uaddr);
 	}else{
-		errx(1, "ipv4 not implemented");
+		if((e = getaddrinfo(argv[0], port, NULL, &ainfo)) != 0)
+			errx(1, "%s", gai_strerror(e));
+		addr = ainfo->ai_addr;
+		slen = ainfo->ai_addrlen;
 	}
-	srvfd = socket(p9addr->sa_family, SOCK_STREAM, 0);
-	if(connect(srvfd, p9addr, socksize) == -1)
+	srvfd = socket(addr->sa_family, SOCK_STREAM, 0);
+	if(connect(srvfd, addr, slen) == -1)
 		err(1, "Could not connect to 9p server");
+	if(uflag == 0)
+		freeaddrinfo(ainfo);
 
 	init9p();
 	_9pversion(srvfd, MSIZE);

@@ -664,7 +664,7 @@ fauth(int fd, char *aname)
 {
 	struct pollfd	pfd[1];
 	char	fbuf[1024];
-	int	r, pid, p[2];
+	int	e, r, pid, p[2];
 	FFid	afid, *af;
 
 	afid.fid = AUTHFID;
@@ -681,17 +681,23 @@ fauth(int fd, char *aname)
 		err(1, "fauth could not daemonize");
 	pfd[0].fd = p[1];
 	pfd[0].events = POLLIN|POLLOUT;
-	while(poll(pfd, 1, -1) > 0){
-		if(pfd[0].revents & POLLIN){
-			r = read(pfd[0].fd, fbuf, sizeof(fbuf));
-			_9pwrite(fd, af, fbuf, r);
-		}
-		if(pfd[0].revents & POLLOUT){
-			r = _9pread(fd, af, fbuf, r);
-			write(pfd[0].fd, fbuf, r);
-		}
+	while((e = poll(pfd, 1, -1)) > 0){
 		if(pfd[0].revents & POLLHUP)
 			break;
+		if(pfd[0].revents & POLLIN){
+			if((r = read(p[1], fbuf, sizeof(fbuf))) < 0)
+				err(1, "fauth read error");
+			if(_9pwrite(fd, af, fbuf, r) < 0)
+				err(1, "fauth 9pwrite error");
+		}
+		if(pfd[0].revents & POLLOUT){
+			if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
+				err(1, "fauth 9pread error");
+			if(write(p[1], fbuf, r) < 0)
+				err(1, "fauth write error");
+		}
 	}
+	if(e == -1)
+		err(1, "Could not poll");
 	exit(0);
 }

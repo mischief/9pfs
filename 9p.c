@@ -662,7 +662,7 @@ isdircached(const char *path)
 int
 fauth(int fd, char *aname)
 {
-	char	fbuf[1024], *s;
+	char	fbuf[1024];
 	int	r, pid, p[2];
 	FFid	afid, *af;
 
@@ -670,29 +670,21 @@ fauth(int fd, char *aname)
 	af = _9pauth(fd, &afid, aname);
 	if(pipe(p) == -1)
 		err(1, "fauth could not create pipe");
-	dprint("pipe is %d %d\n", p[0], p[1]);
 
 	if((pid = fork()) == -1)
 		err(1, "Could not fork");
 	if(pid > 0){
-		return p[1];
+		close(p[1]);
+		return p[0];
 	}
-	dprint("fauth: pid is %d\n", pid);
-	dprint("fauth: pipe fd is %d\n", p[0]);
-	s = strecpy(fbuf, fbuf+sizeof(fbuf), "proto=p9any role=server");
-	if(_9pwrite(fd, af, fbuf, s-fbuf) < 0)
-		err(1, "fauth 9pwrite error first try");
-	if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) == -1)
-		err(1, "fauth 9pread error first try");
-	if(write(p[0], fbuf, r) < 0)
-		err(1, "fauth write error");
-	while((r = read(p[0], fbuf, sizeof(fbuf))) > 0){
+	close(p[0]);
+	while((r = read(p[1], fbuf, sizeof(fbuf))) > 0){
 		dprint("fauth read %s\n", fbuf);
 		if(_9pwrite(fd, af, fbuf, r) < 0)
 			err(1, "fauth 9pwrite error");
 		if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
 			err(1, "fauth 9pread error");
-		if(write(p[0], fbuf, r) < 0)
+		if(write(p[1], fbuf, r) < 0)
 			err(1, "fauth write error");
 	}
 	dprint("fauth exiting %d\n", r);

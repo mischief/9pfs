@@ -151,6 +151,7 @@ _9pauth(int fd, FFid *afid, char *aname)
 	Fcall	tauth, rauth;
 	struct passwd	*pw;
 
+	dprint("_9pauth on %d\n", afid->fid);
 	memset(&tauth, 0, sizeof(tauth));
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
@@ -162,7 +163,7 @@ _9pauth(int fd, FFid *afid, char *aname)
 		errx(1, "Could not auth");
 	f = lookupfid(afid->fid, PUT);
 	f->path = "AUTHFID";
-	f->fid = tauth.fid;
+	f->fid = afid->fid;
 	f->qid = rauth.aqid;
 	authfid = f;
 	return f;
@@ -187,7 +188,7 @@ _9pattach(int fd, FFid* ffid, FFid *afid)
 		errx(1, "Could not attach");
 	f = lookupfid(ffid->fid, PUT);
 	f->path = "/";
-	f->fid = tattach.fid;
+	f->fid = ffid->fid;
 	f->qid = rattach.qid;
 	rootfid = f;
 	return f;

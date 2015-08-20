@@ -149,11 +149,13 @@ fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 			a = auth_getinfo(rpc);
 			return a;
 		case ARok:
+			dprint("fauth_proxy ARok\n");
 			if(write(fd, rpc->arg, rpc->narg) != rpc->narg){
 				goto Error;
 			}
 			break;
 		case ARphase:
+			dprint("fauth_proxy ARphase\n");
 			n = 0;
 			memset(buf, 0, AuthRpcMax);
 			while((ret = dorpc(rpc, "write", buf, n, getkey)) == ARtoosmall){

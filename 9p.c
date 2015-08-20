@@ -662,7 +662,7 @@ isdircached(const char *path)
 int
 fauth(int fd, char *aname)
 {
-	char	fbuf[1024];
+	char	fbuf[1024], *s;
 	int	r, pid, p[2];
 	FFid	afid, *af;
 
@@ -679,6 +679,9 @@ fauth(int fd, char *aname)
 	}
 	dprint("fauth: pid is %d\n", pid);
 	dprint("fauth: pipe fd is %d\n", p[0]);
+	s = strecpy(fbuf, fbuf+sizeof(fbuf), "proto=p9any role=server");
+	if(_9pwrite(fd, af, fbuf, s-fbuf) < 0)
+		err(1, "fauth 9pwrite error first try");
 	if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) == -1)
 		err(1, "fauth 9pread error first try");
 	if(write(p[0], fbuf, r) < 0)

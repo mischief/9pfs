@@ -182,7 +182,7 @@ AuthInfo*
 auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...)
 {
 	int afd;
-	char *p;
+	char *p, *ftmpath;
 	va_list arg;
 	AuthInfo *ai;
 	AuthRpc *rpc;
@@ -192,7 +192,8 @@ auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...)
 	va_end(arg);
 
 	ai = nil;
-	afd = open("/mnt/factotum/rpc", ORDWR);
+	ftmpath = getenv("factotum");
+	afd = open(ftmpath, ORDWR);
 	if(afd < 0){
 		free(p);
 		return nil;

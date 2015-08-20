@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#include <poll.h>
 #include <err.h>
 
 #include <stdlib.h>

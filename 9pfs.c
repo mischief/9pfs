@@ -426,7 +426,7 @@ main(int argc, char *argv[])
 		afd = fauth(srvfd, NULL);
 		ai = auth_proxy(afd, auth_getkey, "proto=p9any role=client");
 		if(ai == NULL)
-			errx(1, "Could not establish authentication");
+			err(1, "Could not establish authentication");
 		auth_freeAI(ai);
 		close(afd);
 	}else{

@@ -414,7 +414,7 @@ main(int argc, char *argv[])
 		errx(1, "ipv4 not implemented");
 	}
 	srvfd = socket(p9addr->sa_family, SOCK_STREAM, 0);
-	if(connect(srvfd, (struct sockaddr*)p9addr, socksize) == -1)
+	if(connect(srvfd, p9addr, socksize) == -1)
 		err(1, "Could not connect to 9p server");
 
 	init9p();

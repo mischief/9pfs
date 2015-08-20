@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "../libc.h"
 #include "../fcall.h"
@@ -77,6 +78,7 @@ auth_rpc(AuthRpc *rpc, char *verb, void *a, int na)
 	memmove(rpc->obuf, verb, l);
 	rpc->obuf[l] = ' ';
 	memmove(rpc->obuf+l+1, a, na);
+	dprint("auth_rpc writing %s\n", rpc->obuf);
 	if((n=write(rpc->afd, rpc->obuf, l+1+na)) != l+1+na){
 		return ARrpcfailure;
 	}
@@ -84,5 +86,6 @@ auth_rpc(AuthRpc *rpc, char *verb, void *a, int na)
 	if((n=read(rpc->afd, rpc->ibuf, AuthRpcMax)) < 0)
 		return ARrpcfailure;
 	rpc->ibuf[n] = '\0';
+	dprint("auth_rpc read %s\n", rpc->ibuf);
 	return classify(rpc->ibuf, n, rpc);
 }

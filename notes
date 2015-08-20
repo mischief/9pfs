@@ -362,3 +362,7 @@ getstat fd found, path is /usr, ndirs is 2
 getstat path given was /usr/ben, dir found was ben
 getstat dname is /usr/ben bname is yod*
 getstat fd found, path is /usr/ben, ndirs is 11
+
+
+seems like it is trying to read from fauth's fd right away. That
+shouldn't happen yet.

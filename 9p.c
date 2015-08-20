@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
-#include <poll.h>
 #include <err.h>
 
 #include <stdlib.h>
@@ -663,42 +662,33 @@ isdircached(const char *path)
 int
 fauth(int fd, char *aname)
 {
-	struct pollfd	pfd[1];
 	char	fbuf[1024];
-	int	e, r, pid, p[2];
+	int	r, pid, p[2];
 	FFid	afid, *af;
 
 	afid.fid = AUTHFID;
 	af = _9pauth(fd, &afid, aname);
-	pipe(p);
+	if(pipe(p) == -1)
+		err(1, "fauth could not create pipe");
 	if((pid = fork()) == -1)
 		err(1, "Could not fork");
 	if(pid > 0){
 		close(p[1]);
 		return p[0];
 	}
+	dprint("fauth: pid is %d\n", pid);
 	close(p[0]);
-	if(daemon(0, 0) == -1)
-		err(1, "fauth could not daemonize");
-	pfd[0].fd = p[1];
-	pfd[0].events = POLLIN|POLLOUT;
-	while((e = poll(pfd, 1, -1)) > 0){
-		if(pfd[0].revents & POLLHUP)
-			break;
-		if(pfd[0].revents & POLLIN){
-			if((r = read(p[1], fbuf, sizeof(fbuf))) < 0)
-				err(1, "fauth read error");
-			if(_9pwrite(fd, af, fbuf, r) < 0)
-				err(1, "fauth 9pwrite error");
-		}
-		if(pfd[0].revents & POLLOUT){
-			if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
-				err(1, "fauth 9pread error");
-			if(write(p[1], fbuf, r) < 0)
-				err(1, "fauth write error");
-		}
+	while((r = read(p[1], fbuf, sizeof(fbuf))) > 0){
+		dprint("fauth read %s\n", fbuf);
+		if(_9pwrite(fd, af, fbuf, r) < 0)
+			err(1, "fauth 9pwrite error");
+		if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
+			err(1, "fauth 9pread error");
+		if(write(p[1], fbuf, r) < 0)
+			err(1, "fauth write error");
 	}
-	if(e == -1)
-		err(1, "Could not poll");
+	dprint("fauth exiting %d\n", r);
+	if(r < 0)
+		err(1, "fauth read error");
 	exit(0);
 }

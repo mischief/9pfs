@@ -147,7 +147,6 @@ fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 		case ARdone:
 			free(buf);
 			a = auth_getinfo(rpc);
-			/* no error, restore whatever was there */
 			return a;
 		case ARok:
 			if(write(fd, rpc->arg, rpc->narg) != rpc->narg){

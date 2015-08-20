@@ -662,6 +662,7 @@ isdircached(const char *path)
 int
 fauth(int fd, char *aname)
 {
+	struct pollfd	pfd[1];
 	char	fbuf[1024];
 	int	r, pid, p[2];
 	FFid	afid, *af;
@@ -678,8 +679,20 @@ fauth(int fd, char *aname)
 	close(p[0]);
 	if(daemon(0, 0) == -1)
 		err(1, "fauth could not daemonize");
-	while((r = read(p[1], fbuf, sizeof(fbuf))) > 0)
-		_9pwrite(fd, af, fbuf, r);
+	pfd[0].fd = p[1];
+	pfd[0].events = POLLIN|POLLOUT;
+	while(poll(pfd, 1, -1) > 0){
+		if(pfd[0].revents & POLLIN){
+			r = read(pfd[0].fd, fbuf, sizeof(fbuf));
+			_9pwrite(fd, af, fbuf, r);
+		}
+		if(pfd[0].revents & POLLOUT){
+			r = _9pread(fd, af, fbuf, r);
+			write(pfd[0].fd, fbuf, r);
+		}
+		if(pfd[0].revents & POLLHUP)
+			break;
+	}
 	if(r < 0)
 		err(1, "Bad read in fauth");
 	exit(0);

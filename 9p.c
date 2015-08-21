@@ -431,15 +431,20 @@ int
 _9pdirread(int fd, FFid *f, Dir **d)
 {
 	FDir	*fdir;
-	uchar	buf[DIRMAX];
+	uchar	buf[DIRMAX], *b;
 	u32int	ts, n;
 
 	dprint("_9pdirread\n");
 	n = f->iounit;
-	ts = _9pread(fd, f, buf, n);
-	if(ts <= 0)
+	b = buf;
+	while((ts = _9pread(fd, f, b, n)) > 0){
+		b += ts;
+		if(b - buf > DIRMAX - n)
+			break;
+	}
+	if(ts < 0)
 		return ts;
-	ts = dirpackage(buf, ts, d);
+	ts = dirpackage(buf, b - buf, d);
 	dprint("_9pdirread about to lookupdir with path %s\n", f->path);
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;

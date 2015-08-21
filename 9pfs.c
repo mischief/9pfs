@@ -330,7 +330,8 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 	ffd(data, ".", NULL, 0);
 	ffd(data, "..", NULL, 0);
-	n = _9pdirread(srvfd, (FFid*)ffi->fh, &d);
+	if((n = _9pdirread(srvfd, (FFid*)ffi->fh, &d)) < 0)
+		return -EIO;
 	dprint("fsreaddir returned from _9pdirread ndirs is %d\n", n);
 	for(e = d; e < d + n; e++){
 		s.st_ino = e->qid.path;

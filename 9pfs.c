@@ -233,7 +233,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	f->offset = off;
 	if((r = _9pread(srvfd, f, buf, size)) < 0)
 		return -EIO;
-	dprint("Leaving fsread, r is %d", r);
+	dprint("Leaving fsread, r is %d\n", r);
 	return r;
 }
 

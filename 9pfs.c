@@ -42,6 +42,7 @@ fsgetattr(const char *path, struct stat *st)
 	Dir	*d;
 
 	if((d = isdircached(path)) != NULL){
+		dprint("fsgetattr %s is cached\n", path);
 		dir2stat(st, d);
 		return 0;
 	}
@@ -82,7 +83,7 @@ fstruncate(const char *path, off_t off)
 	FFid	*f;
 	Dir	*d;
 
-	dprint("fstrncate off is %d\n", off);
+	dprint("fstruncate off is %d\n", off);
 	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
 	if(off == 0){
@@ -223,24 +224,17 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	int	r;
-	u32int	n;
+	int 	r;
 
 	f = (FFid*)ffi->fh;
 	dprint("fsread on %s with fid %u\n", path, f->fid);
 	if(f->mode & O_WRONLY)
 		return -EACCES;
 	f->offset = off;
-	n = 0;
-	while((r = _9pread(srvfd, f, buf+n, size)) > 0){
-		dprint("In fsread loop r is %d: %*s\n", r, r, buf+n);
-		size -= r;
-		n += r;
-	}
-	if(r < 0)
+	if((r = _9pread(srvfd, f, buf, size)) < 0)
 		return -EIO;
-	dprint("Leaving fsread, buf is: %*s\n", n, buf);
-	return n;
+	dprint("Leaving fsread, buf is: %*s\n", r, buf);
+	return r;
 }
 
 int
@@ -252,7 +246,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	u32int	n;
 
 	f = (FFid*)ffi->fh;
-	dprint("fswrite with mode %u\n", f->mode & O_ACCMODE);
+	dprint("fswrite %*s\n", size, buf);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;

@@ -490,6 +490,10 @@ _9pwrite(int fd, FFid *f, void *buf, u32int n)
 {
 	Fcall	twrite, rwrite;
 
+	dprint("_9pwrite size is %d\n", n);
+	if(n == 0)
+		return 0;
+	dprint("_9pwrite %*s\n", n, buf);
 	memset(&twrite, 0, sizeof(twrite));
 	twrite.type = Twrite;
 	twrite.fid = f->fid;

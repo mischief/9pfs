@@ -431,26 +431,34 @@ int
 _9pdirread(int fd, FFid *f, Dir **d)
 {
 	FDir	*fdir;
-	uchar	buf[DIRMAX], *b;
+	uchar	*buf;
 	u32int	ts, n;
+	u64int	bufsize, e;
 
 	dprint("_9pdirread\n");
 	n = f->iounit;
-	b = buf;
-	while((ts = _9pread(fd, f, b, n)) > 0){
-		b += ts;
-		if(b - buf > DIRMAX - n)
-			break;
+	bufsize = DIRMAX;
+	buf = emalloc(bufsize);
+	e = 0;
+	while((ts = _9pread(fd, f, buf+e, n)) > 0){
+		e += ts;
+		if(e > bufsize - n){
+			bufsize += DIRMAX;
+			buf = erealloc(buf, bufsize);
+		}
 	}
-	if(ts < 0)
+	if(ts < 0){
+		free(buf);
 		return ts;
-	ts = dirpackage(buf, b - buf, d);
+	}
+	ts = dirpackage(buf, e, d);
 	dprint("_9pdirread about to lookupdir with path %s\n", f->path);
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;
 		fdir->ndirs = ts;
 		dprint("_9pdirread new FDir with ndirs %d\n", fdir->ndirs);
 	}
+	free(buf);
 	return ts;
 }
 

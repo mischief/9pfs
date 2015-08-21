@@ -80,6 +80,7 @@ auth_rpc(AuthRpc *rpc, char *verb, void *a, int na)
 	memmove(rpc->obuf+l+1, a, na);
 	dprint("auth_rpc writing %s\n", rpc->obuf);
 	if((n=write(rpc->afd, rpc->obuf, l+1+na)) != l+1+na){
+		dprint("auth_rpc write failed %d: %s\n", n, rpc->obuf);
 		return ARrpcfailure;
 	}
 

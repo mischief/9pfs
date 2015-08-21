@@ -80,13 +80,28 @@ int
 fstruncate(const char *path, off_t off)
 {
 	FFid	*f;
+	Dir	*d;
 
+	dprint("fstrncate off is %d\n", off);
 	if((f = _9pwalk(srvfd, path)) == NULL)
 		return -ENOENT;
-	f->mode = OWRITE | OTRUNC;
-	if(_9popen(srvfd, f) == -1){
-		_9pclunk(srvfd, f);
-		return -EIO;
+	if(off == 0){
+		f->mode = OWRITE | OTRUNC;
+		if(_9popen(srvfd, f) == -1){
+			_9pclunk(srvfd, f);
+			return -EIO;
+		}
+	}else{
+		if((d = _9pstat(srvfd, f)) == NULL){
+			_9pclunk(srvfd, f);
+			return -EIO;
+		}
+		d->length = off;
+		if(_9pwstat(srvfd, f, d) == -1){
+			_9pclunk(srvfd, f);
+			free(d);
+			return -EACCES;
+		}
 	}
 	_9pclunk(srvfd, f);
 	return 0;

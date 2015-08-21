@@ -164,6 +164,7 @@ _9pauth(int fd, FFid *afid, char *aname)
 	f->path = "AUTHFID";
 	f->fid = afid->fid;
 	f->qid = rauth.aqid;
+	f->iounit = msize - IOHDRSZ;
 	authfid = f;
 	return f;
 }
@@ -691,15 +692,25 @@ fauth(int fd, char *aname)
 		return p[0];
 	}
 	close(p[0]);
-	while((r = read(p[1], fbuf, sizeof(fbuf))) > 0){
-		dprint("fauth read %s\n", fbuf);
-		if(_9pwrite(fd, af, fbuf, r) < 0)
-			err(1, "fauth 9pwrite error");
-		if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
-			err(1, "fauth 9pread error");
+	while((r = _9pread(fd, af, fbuf, sizeof(fbuf))) > 0){
 		if(write(p[1], fbuf, r) < 0)
 			err(1, "fauth write error");
+		if((r = read(p[1], fbuf, sizeof(fbuf))) < 0)
+			err(1, "fauth read error");
+		if(_9pwrite(fd, af, fbuf, r) < 0)
+			err(1, "fauth 9pwrite error");
 	}
+/*
+ *	while((r = read(p[1], fbuf, sizeof(fbuf))) > 0){
+ *		dprint("fauth read %s\n", fbuf);
+ *		if(_9pwrite(fd, af, fbuf, r) < 0)
+ *			err(1, "fauth 9pwrite error");
+ *		if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
+ *			err(1, "fauth 9pread error");
+ *		if(write(p[1], fbuf, r) < 0)
+ *			err(1, "fauth write error");
+ *	}
+ */
 	dprint("fauth exiting %d\n", r);
 	if(r < 0)
 		err(1, "fauth read error");

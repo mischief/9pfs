@@ -197,6 +197,7 @@ auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...)
 	asprintf(&rpcpath, "%s/rpc", ftm);
 	afd = open(rpcpath, ORDWR);
 	if(afd < 0){
+		dprint("Could not open %s\n", rpcpath);
 		free(p);
 		free(rpcpath);
 		return nil;

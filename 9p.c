@@ -144,25 +144,25 @@ _9pversion(int fd, u32int m)
 }
 
 FFid*
-_9pauth(int fd, FFid *afid, char *aname)
+_9pauth(int fd, u32int afid, char *aname)
 {
 	FFid	*f;
 	Fcall	tauth, rauth;
 	struct passwd	*pw;
 
-	dprint("_9pauth on %d\n", afid->fid);
+	dprint("_9pauth on %d\n", afid);
 	memset(&tauth, 0, sizeof(tauth));
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
 	tauth.type = Tauth;
-	tauth.afid = afid->fid;
+	tauth.afid = afid;
 	tauth.uname = pw->pw_name;
 	tauth.aname = aname;
 	if(do9p(fd, &tauth, &rauth) == -1)
 		errx(1, "Could not auth");
-	f = lookupfid(afid->fid, PUT);
+	f = lookupfid(afid, PUT);
 	f->path = "AUTHFID";
-	f->fid = afid->fid;
+	f->fid = afid;
 	f->qid = rauth.aqid;
 	f->iounit = msize - IOHDRSZ;
 	authfid = f;
@@ -170,7 +170,7 @@ _9pauth(int fd, FFid *afid, char *aname)
 }
 
 FFid*
-_9pattach(int fd, FFid* ffid, FFid *afid)
+_9pattach(int fd, u32int fid, u32int afid)
 {
 	FFid		*f;
 	Fcall		tattach, rattach;
@@ -180,15 +180,15 @@ _9pattach(int fd, FFid* ffid, FFid *afid)
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
 	tattach.type = Tattach;
-	tattach.fid = ffid->fid;
-	tattach.afid = afid->fid;
+	tattach.fid = fid;
+	tattach.afid = afid;
 	tattach.uname = pw->pw_name;
 	tattach.msize = msize;
 	if(do9p(fd, &tattach, &rattach) == -1)
 		errx(1, "Could not attach");
-	f = lookupfid(ffid->fid, PUT);
+	f = lookupfid(fid, PUT);
 	f->path = "/";
-	f->fid = ffid->fid;
+	f->fid = fid;
 	f->qid = rattach.qid;
 	rootfid = f;
 	return f;
@@ -675,48 +675,4 @@ isdircached(const char *path)
 	dprint("getstat path given was %s, dir found was %s\n", path, d->name);
 	free(dname);
 	return d;
-}
-
-int
-fauth(int fd, char *aname)
-{
-	char	fbuf[1024];
-	int	r, pid, p[2];
-	FFid	afid, *af;
-
-	afid.fid = AUTHFID;
-	af = _9pauth(fd, &afid, aname);
-	if(pipe(p) == -1)
-		err(1, "fauth could not create pipe");
-
-	if((pid = fork()) == -1)
-		err(1, "Could not fork");
-	if(pid > 0){
-		close(p[1]);
-		return p[0];
-	}
-	close(p[0]);
-	while((r = _9pread(fd, af, fbuf, sizeof(fbuf))) > 0){
-		if(write(p[1], fbuf, r) < 0)
-			err(1, "fauth write error");
-		if((r = read(p[1], fbuf, sizeof(fbuf))) < 0)
-			err(1, "fauth read error");
-		if(_9pwrite(fd, af, fbuf, r) < 0)
-			err(1, "fauth 9pwrite error");
-	}
-/*
- *	while((r = read(p[1], fbuf, sizeof(fbuf))) > 0){
- *		dprint("fauth read %s\n", fbuf);
- *		if(_9pwrite(fd, af, fbuf, r) < 0)
- *			err(1, "fauth 9pwrite error");
- *		if((r = _9pread(fd, af, fbuf, sizeof(fbuf))) < 0)
- *			err(1, "fauth 9pread error");
- *		if(write(p[1], fbuf, r) < 0)
- *			err(1, "fauth write error");
- *	}
- */
-	dprint("fauth exiting %d\n", r);
-	if(r < 0)
-		err(1, "fauth read error");
-	exit(0);
 }

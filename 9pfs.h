@@ -30,8 +30,8 @@ FILE	*logfile;
 
 void	init9p();
 int	_9pversion(int, u32int);
-FFid	*_9pauth(int, FFid*, char*);
-FFid	*_9pattach(int, FFid*, FFid*);
+FFid	*_9pauth(int, u32int, char*);
+FFid	*_9pattach(int, u32int, u32int);
 FFid	*_9pwalk(int, const char*);
 FFid	*_9pwalkr(int, FFid*, char*);
 FFid	*fidclone(int, FFid*);

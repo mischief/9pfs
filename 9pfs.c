@@ -19,8 +19,8 @@
 
 #include "libc.h"
 #include "fcall.h"
-#include "auth.h"
 #include "9pfs.h"
+#include "auth.h"
 #include "util.h"
 
 enum
@@ -376,7 +376,7 @@ main(int argc, char *argv[])
 	struct sockaddr		*addr;
 	struct addrinfo		*ainfo;
 	char			logstr[100], *fusearg[6], **fargp, port[10];
-	int			afd, ch, doauth, uflag, n, slen, e;
+	int			ch, doauth, uflag, n, slen, e;
 
 	fargp = fusearg;
 	*fargp++ = *argv;
@@ -442,17 +442,15 @@ main(int argc, char *argv[])
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	if(doauth){
-		afid.fid = AUTHFID;
-		afd = fauth(srvfd, NULL);
-		ai = auth_proxy(afd, auth_getkey, "proto=p9any role=client");
+		authfid = _9pauth(srvfd, AUTHFID, NULL);
+		ai = auth_proxy(authfid, auth_getkey, "proto=p9any role=client");
 		if(ai == NULL)
 			err(1, "Could not establish authentication");
 		auth_freeAI(ai);
-		close(afd);
 	}else{
 		afid.fid = NOFID;
 	}
-	rootfid = _9pattach(srvfd, &rfid, &afid);
+	rootfid = _9pattach(srvfd, ROOTFID, AUTHFID);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }	

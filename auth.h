@@ -114,8 +114,8 @@ Attr	*_mkattr(int, char*, char*, Attr*);
 Attr	*_parseattr(char*);
 char	*_strfindattr(Attr*, char*);
 
-extern AuthInfo*	fauth_proxy(int, FFid*, AuthRpc *rpc, AuthGetkey *getkey, char *params);
-extern AuthInfo*	auth_proxy(int, FFid*, AuthGetkey *getkey, char *fmt, ...);
+extern AuthInfo*	fauth_proxy(FFid*, AuthRpc *rpc, AuthGetkey *getkey, char *params);
+extern AuthInfo*	auth_proxy(FFid*, AuthGetkey *getkey, char *fmt, ...);
 extern int		auth_getkey(char*);
 extern int		(*amount_getkey)(char*);
 extern void		auth_freeAI(AuthInfo *ai);

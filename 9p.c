@@ -58,10 +58,7 @@ enum
 	NHASH = 1009
 };
 
-FFid	*rootfid;
-FFid	*authfid;
 void	*tbuf, *rbuf;
-int	msize;
 FFid	*fidhash[NHASH];
 FDir	*dirhash[NHASH];
 
@@ -84,7 +81,7 @@ init9p(void)
 }
 
 int
-do9p(int fd, Fcall *t, Fcall *r)
+do9p(Fcall *t, Fcall *r)
 {
 	int	n;
 
@@ -93,11 +90,11 @@ do9p(int fd, Fcall *t, Fcall *r)
 		r->ename = "Bad S2M conversion";
 		goto err;
 	}
-	if(write(fd, tbuf, n) != n){
+	if(write(srvfd, tbuf, n) != n){
 		r->ename = "Bad 9p write";
 		goto err;
 	}
-	if((n = read9pmsg(fd, rbuf, msize)) == -1){
+	if((n = read9pmsg(srvfd, rbuf, msize)) == -1){
 		r->ename = "Bad 9p read";
 		goto err;
 	}
@@ -121,18 +118,18 @@ err:
 }
 	
 int
-_9pversion(int fd, u32int m)
+_9pversion(u32int m)
 {
 	Fcall	tver, rver;
 
+	msize = m;
 	memset(&tver, 0, sizeof(tver));
 	tver.type = Tversion;
 	tver.msize = m;
 	tver.version = VERSION9P;
-	msize = m;
-	tbuf = erealloc(tbuf, msize);
-	rbuf = erealloc(rbuf, msize);
-	if(do9p(fd, &tver, &rver) != 0)
+	tbuf = erealloc(tbuf, m);
+	rbuf = erealloc(rbuf, m);
+	if(do9p(&tver, &rver) != 0)
 		errx(1, "Could not establish version");
 	if(rver.msize != m){
 		msize = rver.msize;
@@ -143,7 +140,7 @@ _9pversion(int fd, u32int m)
 }
 
 FFid*
-_9pauth(int fd, u32int afid, char *aname)
+_9pauth(u32int afid, char *aname)
 {
 	FFid	*f;
 	Fcall	tauth, rauth;
@@ -157,19 +154,18 @@ _9pauth(int fd, u32int afid, char *aname)
 	tauth.afid = afid;
 	tauth.uname = pw->pw_name;
 	tauth.aname = aname;
-	if(do9p(fd, &tauth, &rauth) == -1)
+	if(do9p(&tauth, &rauth) == -1)
 		errx(1, "Could not auth");
 	f = lookupfid(afid, PUT);
 	f->path = "AUTHFID";
 	f->fid = afid;
 	f->qid = rauth.aqid;
 	f->iounit = msize - IOHDRSZ;
-	authfid = f;
 	return f;
 }
 
 FFid*
-_9pattach(int fd, u32int fid, u32int afid)
+_9pattach(u32int fid, u32int afid)
 {
 	FFid		*f;
 	Fcall		tattach, rattach;
@@ -183,18 +179,17 @@ _9pattach(int fd, u32int fid, u32int afid)
 	tattach.afid = afid;
 	tattach.uname = pw->pw_name;
 	tattach.msize = msize;
-	if(do9p(fd, &tattach, &rattach) == -1)
+	if(do9p(&tattach, &rattach) == -1)
 		errx(1, "Could not attach");
 	f = lookupfid(fid, PUT);
 	f->path = "/";
 	f->fid = fid;
 	f->qid = rattach.qid;
-	rootfid = f;
 	return f;
 }	
 
 FFid*
-_9pwalkr(int fd, FFid *r, char *path)
+_9pwalkr(FFid *r, char *path)
 {
 	FFid	*f;
 	Fcall	twalk, rwalk;
@@ -208,12 +203,12 @@ _9pwalkr(int fd, FFid *r, char *path)
 	while(buf != NULL){
 		for(s = twalk.wname; s < twalk.wname + MAXWELEM && buf != NULL; s++)
 			*s = strsep(&buf, "/");
-		_9pclunk(fd, f);
+		_9pclunk(f);
 		twalk.fid = twalk.newfid;
 		f = uniqfid();
 		twalk.newfid = f->fid;
 		twalk.nwname = s - twalk.wname;
-		if(do9p(fd, &twalk, &rwalk) == -1 || rwalk.nwqid < twalk.nwname){
+		if(do9p(&twalk, &rwalk) == -1 || rwalk.nwqid < twalk.nwname){
 			if(lookupfid(f->fid, DEL) != FDEL)
 				errx(1, "Fid %d not found in hash", f->fid);
 			free(bp);
@@ -227,7 +222,7 @@ _9pwalkr(int fd, FFid *r, char *path)
 }
 
 FFid*
-_9pwalk(int fd, const char *path)
+_9pwalk(const char *path)
 {
 	FFid	*f;
 	char	*pnew;
@@ -235,9 +230,9 @@ _9pwalk(int fd, const char *path)
 	pnew = estrdup(path);
 	if(strcmp(pnew, "/") == 0){
 		free(pnew);
-		return fidclone(fd, rootfid);
+		return fidclone(rootfid);
 	}
-	if((f = _9pwalkr(fd, rootfid, pnew+1)) == NULL){
+	if((f = _9pwalkr(rootfid, pnew+1)) == NULL){
 		free(pnew);
 		return NULL;
 	}
@@ -246,7 +241,7 @@ _9pwalk(int fd, const char *path)
 }
 
 Dir*
-_9pstat(int fd, FFid *f)
+_9pstat(FFid *f)
 {
 	Dir	*d;
 	Fcall	tstat, rstat;
@@ -254,7 +249,7 @@ _9pstat(int fd, FFid *f)
 	memset(&tstat, 0, sizeof(tstat));
 	tstat.type = Tstat;
 	tstat.fid = f->fid;
-	if(do9p(fd, &tstat, &rstat) == -1)
+	if(do9p(&tstat, &rstat) == -1)
 		return NULL;
 	d = emalloc(sizeof(*d) + rstat.nstat);
 	if(convM2D(rstat.stat, rstat.nstat, d, (char*)(d+1)) != rstat.nstat){
@@ -265,7 +260,7 @@ _9pstat(int fd, FFid *f)
 }
 
 int
-_9pwstat(int fd, FFid *f, Dir *d)
+_9pwstat(FFid *f, Dir *d)
 {
 	Fcall	twstat, rwstat;
 	uchar	*st;
@@ -282,7 +277,7 @@ _9pwstat(int fd, FFid *f, Dir *d)
 	twstat.fid = f->fid;
 	twstat.nstat = n;
 	twstat.stat = st;
-	if(do9p(fd, &twstat, &rwstat) == -1){
+	if(do9p(&twstat, &rwstat) == -1){
 		free(st);
 		return -1;
 	}
@@ -291,7 +286,7 @@ _9pwstat(int fd, FFid *f, Dir *d)
 }
 
 int
-_9popen(int fd, FFid *f)
+_9popen(FFid *f)
 {
 	Fcall	topen, ropen;
 	
@@ -299,7 +294,7 @@ _9popen(int fd, FFid *f)
 	topen.type = Topen;
 	topen.fid = f->fid;
 	topen.mode = f->mode;
-	if(do9p(fd, &topen, &ropen) == -1)
+	if(do9p(&topen, &ropen) == -1)
 		return -1;
 	f->qid = ropen.qid;
 	if(ropen.iounit != 0)
@@ -310,7 +305,7 @@ _9popen(int fd, FFid *f)
 }
 
 FFid*
-_9pcreate(int fd, FFid *f, char *name, int perm, int isdir)
+_9pcreate(FFid *f, char *name, int perm, int isdir)
 {
 	Fcall	tcreate, rcreate;
 
@@ -323,8 +318,8 @@ _9pcreate(int fd, FFid *f, char *name, int perm, int isdir)
 	tcreate.name = name;
 	tcreate.perm = perm;
 	tcreate.mode = f->mode;
-	if(do9p(fd, &tcreate, &rcreate) == -1){
-		_9pclunk(fd, f);
+	if(do9p(&tcreate, &rcreate) == -1){
+		_9pclunk(f);
 		return NULL;
 	}
 	if(rcreate.iounit != 0)
@@ -336,7 +331,7 @@ _9pcreate(int fd, FFid *f, char *name, int perm, int isdir)
 }
 
 int
-_9premove(int fd, FFid *f)
+_9premove(FFid *f)
 {
 	Fcall	tremove, rremove;
 
@@ -345,8 +340,8 @@ _9premove(int fd, FFid *f)
 	memset(&tremove, 0, sizeof(tremove));
 	tremove.type = Tremove;
 	tremove.fid = f->fid;
-	if(do9p(fd, &tremove, &rremove) == -1){
-		_9pclunk(fd, f);
+	if(do9p(&tremove, &rremove) == -1){
+		_9pclunk(f);
 		return -1;
 	}
 	if(lookupfid(f->fid, DEL) != FDEL)
@@ -404,7 +399,7 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 }
 
 int
-_9pdirread(int fd, FFid *f, Dir **d)
+_9pdirread(FFid *f, Dir **d)
 {
 	FDir	*fdir;
 	uchar	*buf;
@@ -416,7 +411,7 @@ _9pdirread(int fd, FFid *f, Dir **d)
 	bufsize = DIRMAX;
 	buf = emalloc(bufsize);
 	e = 0;
-	while((ts = _9pread(fd, f, buf+e, n)) > 0){
+	while((ts = _9pread(f, buf+e, n)) > 0){
 		e += ts;
 		if(e > bufsize - n){
 			bufsize += DIRMAX;
@@ -439,7 +434,7 @@ _9pdirread(int fd, FFid *f, Dir **d)
 }
 
 int
-_9pread(int fd, FFid *f, void *buf, u32int n)
+_9pread(FFid *f, void *buf, u32int n)
 {
 	Fcall	tread, rread;
 
@@ -449,7 +444,7 @@ _9pread(int fd, FFid *f, void *buf, u32int n)
 	tread.offset = f->offset;
 	tread.count = n < f->iounit ? n : f->iounit;
 	dprint("_9pread on %s with count %u, offset %lld, fid %u\n", f->path, tread.count, tread.offset, f->fid);
-	if(do9p(fd, &tread, &rread) == -1){
+	if(do9p(&tread, &rread) == -1){
 		dprint("_9pread error returned from do9p\n");
 		return -1;
 	}
@@ -461,7 +456,7 @@ _9pread(int fd, FFid *f, void *buf, u32int n)
 }
 
 int
-_9pwrite(int fd, FFid *f, void *buf, u32int n)
+_9pwrite(FFid *f, void *buf, u32int n)
 {
 	Fcall	twrite, rwrite;
 
@@ -475,14 +470,14 @@ _9pwrite(int fd, FFid *f, void *buf, u32int n)
 	twrite.offset = f->offset;
 	twrite.count = n < f->iounit ? n : f->iounit;
 	twrite.data = buf;
-	if(do9p(fd, &twrite, &rwrite) == -1)
+	if(do9p(&twrite, &rwrite) == -1)
 		return -1;
 	f->offset += rwrite.count;
 	return rwrite.count;
 }
 
 int
-_9pclunk(int fd, FFid *f)
+_9pclunk(FFid *f)
 {
 	Fcall	tclunk, rclunk;
 
@@ -493,7 +488,7 @@ _9pclunk(int fd, FFid *f)
 	tclunk.fid = f->fid;
 	if(lookupfid(f->fid, DEL) != FDEL)
 		errx(1, "Fid %d not found in hash", f->fid);
-	return do9p(fd, &tclunk, &rclunk);
+	return do9p(&tclunk, &rclunk);
 }
 
 FFid*
@@ -544,7 +539,7 @@ lookupfid(u32int fid, int act)
 }
 
 FFid*
-fidclone(int fd, FFid *f)
+fidclone(FFid *f)
 {
 	Fcall	twalk, rwalk;
 	FFid	*newf;
@@ -555,7 +550,7 @@ fidclone(int fd, FFid *f)
 	twalk.fid = f->fid;
 	twalk.newfid = newf->fid;
 	twalk.nwname = 0;
-	if(do9p(fd, &twalk, &rwalk) == -1){
+	if(do9p(&twalk, &rwalk) == -1){
 		lookupfid(f->fid, DEL);
 		return NULL;
 	}

@@ -28,21 +28,26 @@ struct FDir
 
 FILE	*logfile;
 
+FFid	*rootfid;
+FFid	*authfid;
+int	msize;
+int	srvfd;
+
 void	init9p();
-int	_9pversion(int, u32int);
-FFid	*_9pauth(int, u32int, char*);
-FFid	*_9pattach(int, u32int, u32int);
-FFid	*_9pwalk(int, const char*);
-FFid	*_9pwalkr(int, FFid*, char*);
-FFid	*fidclone(int, FFid*);
-Dir	*_9pstat(int, FFid*);
-int	_9pwstat(int, FFid*, Dir*);
-int	_9pclunk(int, FFid*);
-int	_9popen(int, FFid*);
-FFid	*_9pcreate(int, FFid*, char*, int, int);
-int	_9premove(int, FFid*);
-int	_9pread(int, FFid*, void*, u32int);
-int	_9pwrite(int, FFid*, void*, u32int);
-int	_9pdirread(int, FFid*, Dir**);
+int	_9pversion(u32int);
+FFid	*_9pauth(u32int, char*);
+FFid	*_9pattach(u32int, u32int);
+FFid	*_9pwalk(const char*);
+FFid	*_9pwalkr(FFid*, char*);
+FFid	*fidclone(FFid*);
+Dir	*_9pstat(FFid*);
+int	_9pwstat(FFid*, Dir*);
+int	_9pclunk(FFid*);
+int	_9popen(FFid*);
+FFid	*_9pcreate(FFid*, char*, int, int);
+int	_9premove(FFid*);
+int	_9pread(FFid*, void*, u32int);
+int	_9pwrite(FFid*, void*, u32int);
+int	_9pdirread(FFid*, Dir**);
 
 Dir	*isdircached(const char*);

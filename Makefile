@@ -26,8 +26,8 @@ LDADD=	-lfuse
 all:	${TARG}
 
 install:	${TARG}
-	install -s ${TARG} ${BIN}
-	install 9pfs.1 ${MAN}
+	install -s -m 555 -g bin ${TARG} ${BIN}
+	install -m 444 -g bin 9pfs.1 ${MAN}
 
 ${TARG}:	${TARG}.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}

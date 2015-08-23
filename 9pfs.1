@@ -5,10 +5,11 @@
 .Nm 9pfs
 .Nd mount 9P service via FUSE
 .Sh SYNOPSIS
-.Nm grep
+.Nm 9pfs
 .Bk -words
-.Op Fl adnu
+.Op Fl anU
 .Op Fl p Ar port
+.Op Fl u Ar user
 .Op Ar host
 .Op Ar mtpt
 .Ek
@@ -20,6 +21,76 @@ onto
 .Ar mtpt
 using the FUSE user-level file system driver.
 .Pp
-More stuff.
+The following options are available:
+.Bl -tag -width Ds
+.It Fl a
+Negotiate authentication using a local factotum. See
+.Sx ENVIRONMENT
+and
+.Sx EXAMPLES
+for more details.
+.It Fl n
+Do not negotiate authentication. This is the
+default.
+.It Fl U
+Specifies to connect to a UNIX-domain
+socket.
+.It Fl p Ar port
+Specifies the connection port for the 9P service.
+The default is 564.
+.It Fl u Ar user
+Specifies the username to use on authentication
+and attach to the 9P service.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width FACTOTUM
+.It Ev FACTOTUM
+Authentication requires that the 9P service
+provided by a factotum
+.Po see
+.Lk http://man.cat-v.org/9front/4/factotum
+.Pc
+is mounted at the path specified by the
+.Ev FACTOTUM
+environment variable. Plan 9 from User Space
+.Po
+aka
+.Lk https://swtch.com/plan9port/ plan9port
+.Pc
+provides a port of factotum to
+UNIX-like operating systems.
+See the
+.Sx EXAMPLES
+section below for details.
 .Sh EXAMPLES
-Foo bar.
+The following will mount a remote 9P service
+with authentication, so long as plan9port is
+installed.
+.Pp
+.Dl $ factotum -n
+.Dl $ 9pfs -u `namespace`/factotum mnt/factotum
+.Dl $ export FACTOTUM=`pwd`/mnt/factotum
+.Dl $ 9pfs -a pika.spew.net mnt/pika
+.Dl 
+.Dl !adding key: role=client proto=p9sk1 dom=spew
+.Dl user[glenda]:
+.Dl password:
+.Dl !
+.Pp
+The utilities
+.Ar factotum
+and
+.Ar namespace
+are from Russ Cox's
+.Lk https://swtch.com/plan9port/ plan9port
+.Sh BUGS
+Files of 0 reported size are not read correctly under Linux. This
+prevents 9pfs from mounting a useful factotum under Linux. For a
+work-around, use 9pfuse to mount factotum and then proceed with
+authentication as usual.
+.Pp
+OpenBSD does not display all the files in a very large
+directory.
+.Pp
+Moving a file to a different directory is not implemented.
+To do so, cp the file and then remove it.

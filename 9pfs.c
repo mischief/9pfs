@@ -392,7 +392,8 @@ main(int argc, char *argv[])
 	struct sockaddr_un	uaddr;
 	struct sockaddr		*addr;
 	struct addrinfo		*ainfo;
-	char			logstr[100], *fusearg[6], **fargp, port[10];
+	struct passwd		*pw;
+	char			logstr[100], *fusearg[6], **fargp, port[10], user[30];
 	int			ch, doauth, uflag, n, slen, e;
 
 	fargp = fusearg;
@@ -400,7 +401,10 @@ main(int argc, char *argv[])
 	doauth = 0;
 	uflag = 0;
 	strecpy(port, port+sizeof(port), "564");
-	while((ch = getopt(argc, argv, ":dnuap:")) != -1){
+	if((pw = getpwuid(getuid())) == NULL)
+		errx(1, "Could not get user");
+	strecpy(user, user+sizeof(user), pw->pw_name);
+	while((ch = getopt(argc, argv, ":dnUap:u:")) != -1){
 		switch(ch){
 		case 'd':
 			debug = 1;
@@ -409,7 +413,7 @@ main(int argc, char *argv[])
 		case 'n':
 			doauth = 0;
 			break;
-		case 'u':
+		case 'U':
 			uflag = 1;
 			break;
 		case 'a':
@@ -417,6 +421,9 @@ main(int argc, char *argv[])
 			break;
 		case 'p':
 			strecpy(port, port+sizeof(port), optarg);
+			break;
+		case 'u':
+			strecpy(user, user+sizeof(user), optarg);
 			break;
 		default:
 			usage();
@@ -460,13 +467,13 @@ main(int argc, char *argv[])
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	if(doauth){
-		authfid = _9pauth(AUTHFID, NULL);
+		authfid = _9pauth(AUTHFID, user, NULL);
 		ai = auth_proxy(authfid, auth_getkey, "proto=p9any role=client");
 		if(ai == NULL)
 			err(1, "Could not establish authentication");
 		auth_freeAI(ai);
 	}
-	rootfid = _9pattach(ROOTFID, doauth ? AUTHFID : NOFID);
+	rootfid = _9pattach(ROOTFID, doauth ? AUTHFID : NOFID, user, NULL);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }	

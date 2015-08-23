@@ -1,3 +1,5 @@
+BIN=/usr/local/bin
+MAN=/usr/share/man/man1
 TARG=9pfs
 OBJS=9p.o\
 	util.o\
@@ -24,7 +26,8 @@ LDADD=	-lfuse
 all:	${TARG}
 
 install:	${TARG}
-	install -s ${TARG} ${HOME}/bin
+	install -s ${TARG} ${BIN}
+	install 9pfs.1 ${MAN}
 
 ${TARG}:	${TARG}.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}

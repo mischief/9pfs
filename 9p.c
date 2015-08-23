@@ -3,7 +3,6 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <pwd.h>
 #include <err.h>
 
 #include <stdlib.h>
@@ -140,22 +139,19 @@ _9pversion(u32int m)
 }
 
 FFid*
-_9pauth(u32int afid, char *aname)
+_9pauth(u32int afid, char *uname, char *aname)
 {
 	FFid	*f;
 	Fcall	tauth, rauth;
-	struct passwd	*pw;
 
 	dprint("_9pauth on %d\n", afid);
 	memset(&tauth, 0, sizeof(tauth));
-	if((pw = getpwuid(getuid())) == NULL)
-		errx(1, "Could not get user");
 	tauth.type = Tauth;
 	tauth.afid = afid;
-	tauth.uname = pw->pw_name;
+	tauth.uname = uname;
 	tauth.aname = aname;
 	if(do9p(&tauth, &rauth) == -1)
-		errx(1, "Could not auth");
+		errx(1, "Could not establish authentication: %s", rauth.ename);
 	f = lookupfid(afid, PUT);
 	f->path = "AUTHFID";
 	f->fid = afid;
@@ -165,20 +161,17 @@ _9pauth(u32int afid, char *aname)
 }
 
 FFid*
-_9pattach(u32int fid, u32int afid)
+_9pattach(u32int fid, u32int afid, char* uname, char *aname)
 {
 	FFid		*f;
 	Fcall		tattach, rattach;
-	struct passwd	*pw;
 
 	memset(&tattach, 0, sizeof(tattach));
-	if((pw = getpwuid(getuid())) == NULL)
-		errx(1, "Could not get user");
 	tattach.type = Tattach;
 	tattach.fid = fid;
 	tattach.afid = afid;
-	tattach.uname = pw->pw_name;
-	tattach.msize = msize;
+	tattach.uname = uname;
+	tattach.aname = aname;
 	if(do9p(&tattach, &rattach) == -1)
 		errx(1, "Could not attach");
 	f = lookupfid(fid, PUT);

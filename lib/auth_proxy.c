@@ -194,7 +194,7 @@ auth_proxy(FFid *f, AuthGetkey *getkey, char *fmt, ...)
 	va_end(arg);
 
 	ai = nil;
-	ftm = getenv("factotum");
+	ftm = getenv("FACTOTUM");
 	asprintf(&rpcpath, "%s/rpc", ftm);
 	afd = open(rpcpath, ORDWR);
 	if(afd < 0){

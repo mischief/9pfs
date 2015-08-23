@@ -126,7 +126,7 @@ dorpc(AuthRpc *rpc, char *verb, char *val, int len, AuthGetkey *getkey)
  *  this just proxies what the factotum tells it to.
  */
 AuthInfo*
-fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
+fauth_proxy(int sfd, FFid *f, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 {
 	char *buf;
 	int m, n, ret;
@@ -151,7 +151,7 @@ fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 			return a;
 		case ARok:
 			dprint("fauth_proxy ARok\n");
-			if(write(fd, rpc->arg, rpc->narg) != rpc->narg){
+			if(_9pwrite(sfd, f, rpc->arg, rpc->narg) != rpc->narg){
 				goto Error;
 			}
 			break;
@@ -163,7 +163,7 @@ fauth_proxy(int fd, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 				m = atoi(rpc->arg);
 				if(m <= n || m > AuthRpcMax)
 					break;
-				m = read(fd, buf + n, m - n);
+				m = _9pread(sfd, f, buf + n, m - n);
 				if(m <= 0)
 					goto Error;
 				n += m;
@@ -181,7 +181,7 @@ Error:
 }
 
 AuthInfo*
-auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...)
+auth_proxy(int sfd, FFid *f, AuthGetkey *getkey, char *fmt, ...)
 {
 	int afd;
 	char *p, *ftm, *rpcpath;
@@ -206,7 +206,7 @@ auth_proxy(int fd, AuthGetkey *getkey, char *fmt, ...)
 
 	rpc = auth_allocrpc(afd);
 	if(rpc){
-		ai = fauth_proxy(fd, rpc, getkey, p);
+		ai = fauth_proxy(sfd, f, rpc, getkey, p);
 		auth_freerpc(rpc);
 	}
 	close(afd);

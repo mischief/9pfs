@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pwd.h>
-#include <grp.h>
 #include <err.h>
 
 #include <stdlib.h>
@@ -85,7 +84,7 @@ init9p(void)
 }
 
 int
-do9p(int srvfd, Fcall *t, Fcall *r)
+do9p(int fd, Fcall *t, Fcall *r)
 {
 	int	n;
 
@@ -94,11 +93,11 @@ do9p(int srvfd, Fcall *t, Fcall *r)
 		r->ename = "Bad S2M conversion";
 		goto err;
 	}
-	if(write(srvfd, tbuf, n) != n){
+	if(write(fd, tbuf, n) != n){
 		r->ename = "Bad 9p write";
 		goto err;
 	}
-	if((n = read9pmsg(srvfd, rbuf, msize)) == -1){
+	if((n = read9pmsg(fd, rbuf, msize)) == -1){
 		r->ename = "Bad 9p read";
 		goto err;
 	}
@@ -245,30 +244,6 @@ _9pwalk(int fd, const char *path)
 	f->path = pnew;
 	return f;
 }
-
-void
-dir2stat(struct stat *s, Dir *d)
-{
-	struct passwd	*p;
-	struct group	*g;
-
-	s->st_dev = d->dev;
-	s->st_ino = d->qid.path;
-	s->st_mode = d->mode & 0777;
-	if(d->mode & DMDIR)
-		s->st_mode |= S_IFDIR;
-	else
-		s->st_mode |= S_IFREG;
-	s->st_nlink = 1;
-	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
-	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
-	s->st_size = d->length;
-	s->st_blksize = msize - IOHDRSZ;
-	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
-	s->st_atime = d->atime;
-	s->st_mtime = s->st_ctime = d->mtime;
-	s->st_rdev = 0;
-}	
 
 Dir*
 _9pstat(int fd, FFid *f)

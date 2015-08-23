@@ -46,4 +46,3 @@ int	_9pwrite(int, FFid*, void*, u32int);
 int	_9pdirread(int, FFid*, Dir**);
 
 Dir	*isdircached(const char*);
-void	dir2stat(struct stat*, Dir*);

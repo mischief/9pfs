@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <fuse.h>
+#include <pwd.h>
+#include <grp.h>
 #include <err.h>
 #include <errno.h>
 
@@ -29,11 +31,36 @@ enum
 };
 
 int	srvfd;
+int	msize;
 FFid	*rootfid;
 FFid	*authfid;
 int	debug;
 
 void	usage(void);
+
+void
+dir2stat(struct stat *s, Dir *d)
+{
+	struct passwd	*p;
+	struct group	*g;
+
+	s->st_dev = d->dev;
+	s->st_ino = d->qid.path;
+	s->st_mode = d->mode & 0777;
+	if(d->mode & DMDIR)
+		s->st_mode |= S_IFDIR;
+	else
+		s->st_mode |= S_IFREG;
+	s->st_nlink = 1;
+	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
+	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
+	s->st_size = d->length;
+	s->st_blksize = msize - IOHDRSZ;
+	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
+	s->st_atime = d->atime;
+	s->st_mtime = s->st_ctime = d->mtime;
+	s->st_rdev = 0;
+}	
 
 int
 fsgetattr(const char *path, struct stat *st)
@@ -243,21 +270,15 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 {
 	FFid	*f;
 	int	r;
-	u32int	n;
 
 	f = (FFid*)ffi->fh;
 	dprint("fswrite %*s\n", size, buf);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
-	n = 0;
-	while((r = _9pwrite(srvfd, f, (char*)buf+n, size)) > 0){
-		size -= r;
-		n += r;
-	}
-	if(r < 0)
+	if((r = _9pwrite(srvfd, f, (char*)buf, size)) < 0)
 		return -EIO;
-	return n;
+	return r;
 }
 
 int
@@ -438,19 +459,17 @@ main(int argc, char *argv[])
 		freeaddrinfo(ainfo);
 
 	init9p();
-	_9pversion(srvfd, MSIZE);
+	msize = _9pversion(srvfd, MSIZE);
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	if(doauth){
 		authfid = _9pauth(srvfd, AUTHFID, NULL);
-		ai = auth_proxy(authfid, auth_getkey, "proto=p9any role=client");
+		ai = auth_proxy(srvfd, authfid, auth_getkey, "proto=p9any role=client");
 		if(ai == NULL)
 			err(1, "Could not establish authentication");
 		auth_freeAI(ai);
-	}else{
-		afid.fid = NOFID;
 	}
-	rootfid = _9pattach(srvfd, ROOTFID, AUTHFID);
+	rootfid = _9pattach(srvfd, ROOTFID, doauth ? AUTHFID : NOFID);
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }	

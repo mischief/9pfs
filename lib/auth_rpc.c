@@ -9,6 +9,7 @@
 
 #include "../libc.h"
 #include "../fcall.h"
+#include "../9pfs.h"
 #include "../auth.h"
 #include "../util.h"
 

@@ -425,7 +425,7 @@ _9pdirread(FFid *f, Dir **d)
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;
 		fdir->ndirs = ts;
-		qsort(fdir->dirs, ts, sizeof(*fdir->dirs), Dircmp);
+		qsort(fdir->dirs, fdir->ndirs, sizeof(*fdir->dirs), Dircmp);
 	}
 	free(buf);
 	return ts;

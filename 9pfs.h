@@ -24,6 +24,7 @@ struct FDir
 	char	*path;
 	Dir	*dirs;
 	int	ndirs;
+	Dir	**sdirs;
 };
 
 FILE	*logfile;

@@ -387,20 +387,31 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 }
 
 int
+Dircmp(const void *v1, const void *v2)
+{
+	Dir	*e, *d;
+
+	e = *(Dir**)v1;
+	d = *(Dir**)v2;
+
+	return strcmp(e->name, d->name);
+}
+
+int
 _9pdirread(FFid *f, Dir **d)
 {
 	FDir	*fdir;
 	uchar	*buf;
 	u32int	ts, n;
-	u64int	bufsize, e;
+	u64int	bufsize, r;
 
 	n = f->iounit;
 	bufsize = DIRMAX;
 	buf = emalloc(bufsize);
-	e = 0;
-	while((ts = _9pread(f, buf+e, n)) > 0){
-		e += ts;
-		if(e > bufsize - n){
+	r = 0;
+	while((ts = _9pread(f, buf+r, n)) > 0){
+		r += ts;
+		if(r > bufsize - n){
 			bufsize += DIRMAX;
 			buf = erealloc(buf, bufsize);
 		}
@@ -409,10 +420,11 @@ _9pdirread(FFid *f, Dir **d)
 		free(buf);
 		return ts;
 	}
-	ts = dirpackage(buf, e, d);
+	ts = dirpackage(buf, r, d);
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;
 		fdir->ndirs = ts;
+		mergesort(&fdir->dirs, ts, sizeof(fdir->dirs), Dircmp);
 	}
 	free(buf);
 	return ts;
@@ -608,6 +620,7 @@ isdircached(const char *path)
 		free(dname);
 		return NULL;
 	}
+	
 	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
 		if(strcmp(d->name, bname) == 0)
 			break;

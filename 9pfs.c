@@ -65,12 +65,10 @@ fsgetattr(const char *path, struct stat *st)
 	Dir	*d;
 
 	if((d = isdircached(path)) != NULL){
-		dprint("fsgetattr %s is cached\n", path);
 		dir2stat(st, d);
 		return 0;
 	}
 	if((f = _9pwalk(path)) == NULL){
-		dprint("fsgetattr path %s not found\n", path);
 		return -ENOENT;
 	}
 	if((d = _9pstat(f)) == NULL){
@@ -106,7 +104,6 @@ fstruncate(const char *path, off_t off)
 	FFid	*f;
 	Dir	*d;
 
-	dprint("fstruncate off is %d\n", off);
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	if(off == 0){
@@ -175,7 +172,6 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	dprint("fsopen on %s\n", path);
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
@@ -208,7 +204,6 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 			free(dname);
 			return -ENOENT;
 		}
-		dprint("fscreate with perm %o and access %o\n", perm, ffi->flags&O_ACCMODE);
 		f->mode = ffi->flags & O_ACCMODE;
 		f = _9pcreate(f, bname, perm, 0);
 		if(f == NULL){
@@ -250,13 +245,11 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	int 	r;
 
 	f = (FFid*)ffi->fh;
-	dprint("fsread on %s with fid %u\n", path, f->fid);
 	if(f->mode & O_WRONLY)
 		return -EACCES;
 	f->offset = off;
 	if((r = _9pread(f, buf, size)) < 0)
 		return -EIO;
-	dprint("Leaving fsread, r is %d\n", r);
 	return r;
 }
 
@@ -268,7 +261,6 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	int	r;
 
 	f = (FFid*)ffi->fh;
-	dprint("fswrite %*s\n", size, buf);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
@@ -282,7 +274,6 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	dprint("fsopendir\n");
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
@@ -358,7 +349,6 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	ffd(data, "..", NULL, 0);
 	if((n = _9pdirread((FFid*)ffi->fh, &d)) < 0)
 		return -EIO;
-	dprint("fsreaddir returned from _9pdirread ndirs is %d\n", n);
 	for(e = d; e < d + n; e++){
 		s.st_ino = e->qid.path;
 		s.st_mode = e->mode & 0777;
@@ -463,7 +453,6 @@ main(int argc, char *argv[])
 
 	init9p();
 	msize = _9pversion(MSIZE);
-	dprint("Did _9pversion\n");
 	memset(&rfid, 0, sizeof(rfid));
 	memset(&afid, 0, sizeof(afid));
 	if(doauth){
@@ -481,18 +470,6 @@ main(int argc, char *argv[])
 void
 usage(void)
 {
-	exit(1);
-}
-
-void
-dprint(char *fmt, ...)
-{
-	va_list	va;
-
-	if(debug == 0)
-		return;
-	va_start(va, fmt);
-	vfprintf(logfile, fmt, va);
-	va_end(va);
-	return;
+	fprintf(stderr, "usage: 9pfs [-anU] [-p port] [-u user] [host] [mtpt]\n");
+	exit(2);
 }

@@ -150,13 +150,11 @@ fauth_proxy(FFid *f, AuthRpc *rpc, AuthGetkey *getkey, char *params)
 			a = auth_getinfo(rpc);
 			return a;
 		case ARok:
-			dprint("fauth_proxy ARok\n");
 			if(_9pwrite(f, rpc->arg, rpc->narg) != rpc->narg){
 				goto Error;
 			}
 			break;
 		case ARphase:
-			dprint("fauth_proxy ARphase\n");
 			n = 0;
 			memset(buf, 0, AuthRpcMax);
 			while((ret = dorpc(rpc, "write", buf, n, getkey)) == ARtoosmall){
@@ -198,7 +196,6 @@ auth_proxy(FFid *f, AuthGetkey *getkey, char *fmt, ...)
 	asprintf(&rpcpath, "%s/rpc", ftm);
 	afd = open(rpcpath, ORDWR);
 	if(afd < 0){
-		dprint("Could not open %s\n", rpcpath);
 		free(p);
 		free(rpcpath);
 		return nil;

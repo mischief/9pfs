@@ -104,14 +104,11 @@ do9p(Fcall *t, Fcall *r)
 	if(r->tag != t->tag)
 		errx(1, "tag mismatch");
 	if(r->type != t->type+1){
-		dprint("Type mismatch\n");
-		dprint("Expected %s got %s\n", calls2str[t->type], calls2str[r->type]);
 		goto err;
 	}
 	return 0;
 
 err:
-	dprint("9p error %s\n", r->ename);
 	r->type = Rerror;
 	return -1;
 }
@@ -144,7 +141,6 @@ _9pauth(u32int afid, char *uname, char *aname)
 	FFid	*f;
 	Fcall	tauth, rauth;
 
-	dprint("_9pauth on %d\n", afid);
 	memset(&tauth, 0, sizeof(tauth));
 	tauth.type = Tauth;
 	tauth.afid = afid;
@@ -205,7 +201,6 @@ _9pwalkr(FFid *r, char *path)
 			if(lookupfid(f->fid, DEL) != FDEL)
 				errx(1, "Fid %d not found in hash", f->fid);
 			free(bp);
-			dprint("_9pwalkr path not found %s\n", path);
 			return NULL;
 		}
 	}
@@ -399,7 +394,6 @@ _9pdirread(FFid *f, Dir **d)
 	u32int	ts, n;
 	u64int	bufsize, e;
 
-	dprint("_9pdirread\n");
 	n = f->iounit;
 	bufsize = DIRMAX;
 	buf = emalloc(bufsize);
@@ -416,11 +410,9 @@ _9pdirread(FFid *f, Dir **d)
 		return ts;
 	}
 	ts = dirpackage(buf, e, d);
-	dprint("_9pdirread about to lookupdir with path %s\n", f->path);
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;
 		fdir->ndirs = ts;
-		dprint("_9pdirread new FDir with ndirs %d\n", fdir->ndirs);
 	}
 	free(buf);
 	return ts;
@@ -436,15 +428,11 @@ _9pread(FFid *f, void *buf, u32int n)
 	tread.fid = f->fid;
 	tread.offset = f->offset;
 	tread.count = n < f->iounit ? n : f->iounit;
-	dprint("_9pread on %s with count %u, offset %lld, fid %u\n", f->path, tread.count, tread.offset, f->fid);
 	if(do9p(&tread, &rread) == -1){
-		dprint("_9pread error returned from do9p\n");
 		return -1;
 	}
 	f->offset += rread.count;
-	dprint("Data returned was\n%s with count %d\n", rread.data, rread.count);
 	memcpy(buf, rread.data, rread.count);
-	dprint("_9pread returning file offset is %lu, fid for file is %u\n", f->offset, f->fid);
 	return rread.count;
 }
 
@@ -453,10 +441,8 @@ _9pwrite(FFid *f, void *buf, u32int n)
 {
 	Fcall	twrite, rwrite;
 
-	dprint("_9pwrite size is %d\n", n);
 	if(n == 0)
 		return 0;
-	dprint("_9pwrite %*s\n", n, buf);
 	memset(&twrite, 0, sizeof(twrite));
 	twrite.type = Twrite;
 	twrite.fid = f->fid;
@@ -588,12 +574,10 @@ lookupdir(char *path, int act)
 			free(fd->dirs);
 			fd->dirs = NULL;
 			fd->ndirs = 0;
-			dprint("lookupdir update fd with path %s\n", fd->path);
 		}else{
 			fd = emalloc(sizeof(*fd));
 			fd->path = estrdup(path);
 			*fdloc = fd;
-			dprint("lookupdir new fd with path %s\n", fd->path);
 		}
 		break;
 	case DEL:
@@ -620,22 +604,18 @@ isdircached(const char *path)
 	dname = estrdup(path);
 	bname = strrchr(dname, '/');
 	*bname++ = '\0';
-	dprint("getstat dname is %s bname is %s\n", dname, bname);
 	if((fd = lookupdir(dname, GET)) == NULL){
 		free(dname);
 		return NULL;
 	}
-	dprint("getstat fd found, path is %s, ndirs is %d\n", fd->path, fd->ndirs);
 	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
 		if(strcmp(d->name, bname) == 0)
 			break;
 	}
 	if(d == fd->dirs + fd->ndirs){
-		dprint("getstat bname %s not found\n", bname);
 		free(dname);
 		return NULL;
 	}
-	dprint("getstat path given was %s, dir found was %s\n", path, d->name);
 	free(dname);
 	return d;
 }

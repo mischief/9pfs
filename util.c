@@ -73,3 +73,19 @@ estrdup(const char *s)
 		err(1, "estrdup: out of memory");
 	return r;
 }
+
+void
+dprint(char *fmt, ...)
+{
+	char	*s;
+	va_list	va;
+
+	if(debug == 0)
+		return;
+	va_start(va, fmt);
+	vasprintf(&s, fmt, va);
+	va_end(va);
+	fprintf(logfile, "%s\n", s);
+	free(s);
+	return;
+}

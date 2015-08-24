@@ -30,8 +30,6 @@ enum
 	MSIZE = 8192
 };
 
-int	debug;
-
 void	usage(void);
 
 void

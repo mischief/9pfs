@@ -33,6 +33,7 @@ FFid	*rootfid;
 FFid	*authfid;
 int	msize;
 int	srvfd;
+int	debug;
 
 void	init9p();
 int	_9pversion(u32int);

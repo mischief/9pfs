@@ -394,7 +394,6 @@ dircmp(const void *v1, const void *v2)
 
 	e = v1;
 	d = v2;
-
 	return strcmp(e->name, d->name);
 }
 

@@ -388,12 +388,12 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 }
 
 int
-Dircmp(const void *v1, const void *v2)
+dircmp(const void *v1, const void *v2)
 {
-	Dir	*e, *d;
+	const Dir *e, *d;
 
-	e = (Dir*)v1;
-	d = (Dir*)v2;
+	e = v1;
+	d = v2;
 
 	return strcmp(e->name, d->name);
 }
@@ -425,7 +425,7 @@ _9pdirread(FFid *f, Dir **d)
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;
 		fdir->ndirs = ts;
-		qsort(fdir->dirs, fdir->ndirs, sizeof(*fdir->dirs), Dircmp);
+		qsort(fdir->dirs, fdir->ndirs, sizeof(*fdir->dirs), dircmp);
 	}
 	free(buf);
 	return ts;
@@ -622,7 +622,7 @@ isdircached(const char *path)
 		return NULL;
 	}
 	e.name = bname;
-	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), Dircmp);
+	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), dircmp);
 	free(dname);
 	return d;
 }

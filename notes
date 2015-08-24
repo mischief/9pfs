@@ -366,3 +366,55 @@ getstat fd found, path is /usr/ben, ndirs is 11
 
 seems like it is trying to read from fauth's fd right away. That
 shouldn't happen yet.
+
+Not sure if my mergesort is going to work.
+
+I have fdir->dirs = *d;
+
+Fdir->dirs is  a pointer to a dir. It is actually an array of dirs.
+
+so Fdir->dirs++ is another dir
+
+Normally you would have e.g. char *strings[NSTR];
+That's what you are sorting.
+
+So  strings is a pointer to a pointer to a char.
+char **strings;
+
+Location of first string.
+
+I think this will work...
+strings++ is the next string.
+Dir **d = &fdir->ndirs
+
+d++ is not the next dir.
+
+char **strings;
+strings[1] is a char*;
+*strings++ is a char*;
+
+Dir **d = &fdir->ndirs;
+d[0] is a Dir*;
+*d++ is not?
+
+*d is a Dir*. d holds a memory location that is the array of Dirs.
+
+d = Dir *dirs[NDIRS] essentially.
+
+set: dirs = *d;
+*d is the memory location of a dir.
+(*d)++ is the next dir. They are sequential.
+
+fdir->dirs is the first of a sequential list of pointers to Dirs?
+
+*d is the first of a sequential list of pointers to Dirs. so yes.
+
+so fdir->dirs[0] is a Dir (not a pointer). fdir->dirs[1] is a Dir (not
+a pointer).
+
+What does mergesort want? The base of the array. It would be
+nice to have an array of pointers to Dirs, but actually we have
+an array of Dirs. So more copying is going to go on.
+Not a big deal I hope.
+
+

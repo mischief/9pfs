@@ -1,4 +1,4 @@
-.Dd $Mdocdate: August 23 2015 $
+.Dd $Mdocdate: August 24  2015 $
 .Dt 9PFS 1
 .Os
 .Sh NAME
@@ -85,9 +85,9 @@ are from Russ Cox's
 .Lk https://swtch.com/plan9port/ plan9port
 .Sh BUGS
 Files of 0 reported size are not read correctly under Linux. This
-prevents 9pfs from mounting a useful factotum under Linux. For a
+prevents 9pfs from mounting a useful factotum. For a
 work-around, use 9pfuse to mount factotum and then proceed with
-authentication as usual.
+9pfs authentication as usual.
 .Pp
 OpenBSD does not display all the files in a very large
 directory.

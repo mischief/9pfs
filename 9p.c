@@ -610,7 +610,7 @@ Dir*
 isdircached(const char *path)
 {
 	FDir	*fd;
-	Dir	*d;
+	Dir	**d, *e;
 	char	*dname, *bname;
 
 	dname = estrdup(path);
@@ -620,15 +620,10 @@ isdircached(const char *path)
 		free(dname);
 		return NULL;
 	}
-	
-	for(d = fd->dirs; d < fd->dirs + fd->ndirs; d++){
-		if(strcmp(d->name, bname) == 0)
-			break;
-	}
-	if(d == fd->dirs + fd->ndirs){
-		free(dname);
-		return NULL;
-	}
+	e = emalloc(sizeof(*e));
+	e->name = bname;
+	d = bsearch(&e, &fd->dirs, sizeof(fd->dirs), fd->ndirs, Dircmp);
+	free(e);
 	free(dname);
 	return d;
 }

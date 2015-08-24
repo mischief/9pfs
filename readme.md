@@ -12,7 +12,8 @@ in `<fuse.h>`. This API is standardized across various OSs and so
 it works equally well on OpenBSD, FreeBSD, or Linux. It was expressly
 written for OpenBSD and developed primarily on that OS.
 
-It is also faster than 9pfuse. Below is the time it took to run du -a on my home directory on a plan 9 installation mounted by 9pfs:
+It is also faster than 9pfuse. Below is the time it took to run du
+-a on my home directory on a plan 9 installation mounted by 9pfs:
 
 ```
 $ time du -a
@@ -45,3 +46,15 @@ real    0m11.999s
 user    0m0.003s
 sys     0m0.047s
 ```
+
+Installation
+============
+If you are using OpenBSD, then
+```
+$ make
+$ sudo make install
+```
+will perform the installation. If you are using another operating
+system of your choice, edit the the BIN and MAN variables of the
+Makefile to choose where you want to install the 9pfs binary and
+man page, respectively.

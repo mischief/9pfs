@@ -62,6 +62,7 @@ UNIX-like operating systems.
 See the
 .Sx EXAMPLES
 section below for details.
+.El
 .Sh EXAMPLES
 The following will mount a remote 9P service
 with authentication, so long as plan9port is
@@ -71,7 +72,6 @@ installed.
 .Dl $ 9pfs -U `namespace`/factotum mnt/factotum
 .Dl $ export FACTOTUM=`pwd`/mnt/factotum
 .Dl $ 9pfs -a spew.net mnt/spew
-.Dl 
 .Dl !adding key: role=client proto=p9sk1 dom=spew
 .Dl user[glenda]:
 .Dl password:

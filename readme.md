@@ -16,35 +16,41 @@ It is also faster than 9pfuse. Below is the time it took to run du
 -a on my home directory on a plan 9 installation mounted by 9pfs:
 
 ```
-$ time du -a
-real    0m1.473s
+$ time du -a > /dev/null
+
+real    0m2.662s
+user    0m0.017s
+sys     0m0.053s
+$ time du -a > /dev/null
+
+real    0m2.475s
 user    0m0.007s
-sys     0m0.027s
-$ time du -a
-real    0m1.467s
-user    0m0.013s
-sys     0m0.027s
-$ time du -a
-real    0m1.447s
-user    0m0.013s
-sys     0m0.023s
+sys     0m0.037s
+$ time du -a > /dev/null
+
+real    0m2.487s
+user    0m0.007s
+sys     0m0.037s
 ```
 
 And this is the time it takes for 9pfuse:
 
 ```
-$ time du -a
-real    0m9.905s
-user    0m0.010s
+$ time du -a > /dev/null
+
+real    0m10.959s
+user    0m0.017s
 sys     0m0.033s
-$ time du -a
-real    0m12.016s
+$ time du -a > /dev/null
+
+real    0m13.239s
 user    0m0.000s
 sys     0m0.050s
-$ time du -a
-real    0m11.999s
-user    0m0.003s
-sys     0m0.047s
+$ time du -a > /dev/null
+
+real    0m13.082s
+user    0m0.007s
+sys     0m0.040s
 ```
 
 Installation

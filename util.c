@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include <err.h>
 #include <errno.h>
@@ -73,6 +75,9 @@ estrdup(const char *s)
 		err(1, "estrdup: out of memory");
 	return r;
 }
+
+extern int	debug;
+extern FILE	*logfile;
 
 void
 dprint(char *fmt, ...)

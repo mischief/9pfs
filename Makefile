@@ -25,26 +25,13 @@ LDADD=	-lfuse
 
 all:	${TARG}
 
-install:	${TARG}
+install:	${TARG} ${TARG}.1
 	install -s -m 555 -g bin ${TARG} ${BIN}
-	install -m 444 -g bin 9pfs.1 ${MAN}
+	install -m 444 -g bin ${TARG}.1 ${MAN}
 
 ${TARG}:	${TARG}.o ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}
 
-9ptest: 	junk/9ptest.o ${OBJS}
-	${CC} ${LDFLAGS} -o $@ junk/9ptest.o ${OBJS}
-
-simplefuse:	junk/simplefuse.o
-	${CC} ${LDFLAGS} -o $@ junk/simplefuse.o ${LDADD}
-
-cleannametest:	junk/cleannametest.o lib/cleanname.o
-	${CC} ${LDFLAGS} -o $@ junk/cleannametest.o lib/cleanname.o
-
-strcmptest:	junk/strcmptest.o
-	${CC} ${LDFLAGS} -o $@ junk/strcmptest.o
-
-	
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<
 

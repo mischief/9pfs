@@ -48,7 +48,7 @@ sys     0m0.047s
 ```
 
 Installation
-============
+------------
 If you are using OpenBSD, then
 ```
 $ make

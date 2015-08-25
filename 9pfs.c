@@ -33,6 +33,7 @@ enum
 void	dir2stat(struct stat*, Dir*);
 Dir	*iscached(const char*);
 void	clearcache(const char*);
+int	iscachectl(const char *);
 void	usage(void);
 
 int
@@ -41,6 +42,10 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	Dir	*d;
 
+	if(iscachectl(path)){
+		st->st_mode = 0222 | S_IFREG;
+		return 0;
+	}
 	if((d = iscached(path)) != NULL){
 		dir2stat(st, d);
 		return 0;
@@ -83,6 +88,8 @@ fstruncate(const char *path, off_t off)
 	FFid	*f;
 	Dir	*d;
 
+	if(iscachectl(path))
+		return 0;
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	if(off == 0){
@@ -153,6 +160,8 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
+	if(iscachectl(path))
+		return 0;
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
@@ -243,6 +252,10 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	FFid	*f;
 	int	r;
 
+	if(iscachectl(path)){
+		clearcache(path);
+		return size;
+	}
 	f = (FFid*)ffi->fh;
 	if(f->mode & O_RDONLY)
 		return -EACCES;
@@ -339,6 +352,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 	ffd(data, ".", NULL, 0);
 	ffd(data, "..", NULL, 0);
+	ffd(data, ".cache", NULL, 0);
 	if((f = lookupdir(path, GET)) != NULL){
 		d = f->dirs;
 		n = f->ndirs;
@@ -516,6 +530,18 @@ iscached(const char *path)
 	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), dircmp);
 	free(dname);
 	return d;
+}
+
+int
+iscachectl(const char *path)
+{
+	char *s;
+
+	s = strrchr(path, '/');
+	s++;
+	if(strcmp(s, ".cache") == 0)
+		return 1;
+	return 0;
 }
 
 void

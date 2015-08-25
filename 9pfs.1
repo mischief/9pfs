@@ -42,6 +42,14 @@ The default is 564.
 Specifies the username to use on authentication
 and attach to the 9P service.
 .El
+.Pp
+9pfs caches directories it reads which will cause
+inconsistencies if a different 9P client is connected
+to and making changes to the same 9P service. There
+is a virtual control file
+.Ql .cache
+contained in each directory of 9pfs.
+Writing anything to that file will clear the cache.
 .Sh ENVIRONMENT
 .Bl -tag -width FACTOTUM
 .It Ev FACTOTUM
@@ -96,6 +104,3 @@ directory.
 .Pp
 Moving a file to a different directory is not implemented.
 To do so, copy the file and then remove it.
-.Pp
-Due to caching, 9pfs may be unaware of changes other 9P clients
-of the same 9P service are making.

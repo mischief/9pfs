@@ -418,7 +418,7 @@ _9pdirread(FFid *f, Dir **d)
 	}
 	if(r <= 0){
 		free(buf);
-		return ts;
+		return r;
 	}
 	ts = dirpackage(buf, r, d);
 	if((fdir = lookupdir(f->path, PUT)) != NULL){

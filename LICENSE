@@ -20,8 +20,8 @@ by:
  * Copyright © 2002 Lucent Technologies Inc.
  * All Rights Reserved
 
-and released under the terms of the Lucent Public License (see:
-http://9front.org/9front/lib/legal/lpl)
+and released under the terms of the Lucent Public License Version 1.02
+(see: http://9front.org/9front/lib/legal/lpl).
 
 The method "ereallocarray" is derived from OpenBSD "reallocarray" and
 is governed by the following license:

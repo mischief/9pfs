@@ -38,4 +38,4 @@ ${TARG}:	${TARG}.o ${OBJS}
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${TARG} ${LIB} ${OBJS} *.o junk/*.o simplefuse 9ptest cleannametest *.core 
+	rm -f ${TARG} ${LIB} ${OBJS} *.o

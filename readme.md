@@ -1,8 +1,7 @@
 9pfs mounts a 9P service using the FUSE file system driver. It is a
 replacement for 9pfuse from [plan9port](https://swtch.com/plan9port/).
-This implementation uses the C library interface to the FUSE device so
-that it works equally well on Linux or *BSD. 9pfuse reads the FUSE device
-directly and currently only works on Linux.
+Unlike 9pfuse, it works equally well on Linux, OpenBSD, FreeBSD, and
+any other OS with a FUSE implementation.
 
 It is also faster than 9pfuse. Below is the time it took to run du
 -a on my home directory on a plan 9 installation mounted by 9pfs.

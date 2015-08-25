@@ -381,7 +381,7 @@ main(int argc, char *argv[])
 	struct addrinfo		*ainfo;
 	struct passwd		*pw;
 	char			logstr[100], *fusearg[6], **fargp, port[10], user[30];
-	int			ch, doauth, uflag, n, slen, e;
+	int			ch, doauth, uflag, n, alen, e;
 
 	fargp = fusearg;
 	*fargp++ = *argv;
@@ -435,15 +435,15 @@ main(int argc, char *argv[])
 		n = sizeof(uaddr.sun_path);
 		strecpy(uaddr.sun_path, uaddr.sun_path+n, argv[0]);
 		addr = (struct sockaddr*)&uaddr;
-		slen = sizeof(uaddr);
+		alen = sizeof(uaddr);
 	}else{
 		if((e = getaddrinfo(argv[0], port, NULL, &ainfo)) != 0)
 			errx(1, "%s", gai_strerror(e));
 		addr = ainfo->ai_addr;
-		slen = ainfo->ai_addrlen;
+		alen = ainfo->ai_addrlen;
 	}
 	srvfd = socket(addr->sa_family, SOCK_STREAM, 0);
-	if(connect(srvfd, addr, slen) == -1)
+	if(connect(srvfd, addr, alen) == -1)
 		err(1, "Could not connect to 9p server");
 	if(uflag == 0)
 		freeaddrinfo(ainfo);

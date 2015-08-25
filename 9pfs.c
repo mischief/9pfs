@@ -31,6 +31,9 @@ enum
 };
 
 void	dir2stat(struct stat*, Dir*);
+Dir	*iscached(const char*);
+void	clearcache(const char*);
+void	usage(void);
 
 int
 fsgetattr(const char *path, struct stat *st)

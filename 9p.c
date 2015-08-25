@@ -416,7 +416,7 @@ _9pdirread(FFid *f, Dir **d)
 			buf = erealloc(buf, bufsize);
 		}
 	}
-	if(ts < 0){
+	if(r <= 0){
 		free(buf);
 		return ts;
 	}

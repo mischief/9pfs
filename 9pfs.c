@@ -340,7 +340,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
 	Dir		*d, *e;
-	int		n;
+	long		n;
 	struct stat	s;
 
 	ffd(data, ".", NULL, 0);

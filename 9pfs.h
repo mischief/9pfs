@@ -60,6 +60,3 @@ long	_9pdirread(FFid*, Dir**);
 
 int	dircmp(const void*, const void*);
 FDir	*lookupdir(const char*, int);
-Dir	*iscached(const char*);
-void	clearcache(const char*);
-void	usage(void);

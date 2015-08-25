@@ -1,16 +1,8 @@
-This is a fuse filesystem for attaching a 9p server to your unix file
-tree. In other words a fuse to 9p translator.
-
-"But doesn't a 9pfuse implementation already exist?", you may ask. Yes,
-plan9port includes 9pfuse. However, 9pfuse reads the fuse device directly
-instead of using the C library interface. Thus it may or may not work
-on a given platform given that the semantics of the device itself are
-not specified.
-
-This fuse implementation uses the C library interface as exposed
-in `<fuse.h>`. This API is standardized across various OSs and so
-it works equally well on OpenBSD, FreeBSD, or Linux. It was expressly
-written for OpenBSD and developed primarily on that OS.
+9pfs mounts a 9P service using the FUSE file system driver. It is a
+replacement for 9pfuse from [plan9port](https://swtch.com/plan9port/).
+This implementation uses the C library interface to the FUSE device so
+that it works equally well on Linux or *BSD. 9pfuse reads the FUSE device
+directly and currently only works on Linux.
 
 It is also faster than 9pfuse. Below is the time it took to run du
 -a on my home directory on a plan 9 installation mounted by 9pfs.

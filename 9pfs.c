@@ -30,64 +30,7 @@ enum
 	MSIZE = 8192
 };
 
-void	usage(void);
-
-void
-clearcache(const char *path)
-{
-	char	*s, *p;
-
-	s = estrdup(path);
-	p = strrchr(s, '/');
-	*p = '\0';
-	lookupdir(s, DEL);
-	free(s);
-	return;
-}
-
-Dir*
-iscached(const char *path)
-{
-	FDir	*fd;
-	Dir	*d, e;
-	char	*dname, *bname;
-
-	dname = estrdup(path);
-	bname = strrchr(dname, '/');
-	*bname++ = '\0';
-	if((fd = lookupdir(dname, GET)) == NULL){
-		free(dname);
-		return NULL;
-	}
-	e.name = bname;
-	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), dircmp);
-	free(dname);
-	return d;
-}
-
-void
-dir2stat(struct stat *s, Dir *d)
-{
-	struct passwd	*p;
-	struct group	*g;
-
-	s->st_dev = d->dev;
-	s->st_ino = d->qid.path;
-	s->st_mode = d->mode & 0777;
-	if(d->mode & DMDIR)
-		s->st_mode |= S_IFDIR;
-	else
-		s->st_mode |= S_IFREG;
-	s->st_nlink = 1;
-	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
-	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
-	s->st_size = d->length;
-	s->st_blksize = msize - IOHDRSZ;
-	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
-	s->st_atime = d->atime;
-	s->st_mtime = s->st_ctime = d->mtime;
-	s->st_rdev = 0;
-}	
+void	dir2stat(struct stat*, Dir*);
 
 int
 fsgetattr(const char *path, struct stat *st)
@@ -517,6 +460,63 @@ main(int argc, char *argv[])
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }	
+
+void
+dir2stat(struct stat *s, Dir *d)
+{
+	struct passwd	*p;
+	struct group	*g;
+
+	s->st_dev = d->dev;
+	s->st_ino = d->qid.path;
+	s->st_mode = d->mode & 0777;
+	if(d->mode & DMDIR)
+		s->st_mode |= S_IFDIR;
+	else
+		s->st_mode |= S_IFREG;
+	s->st_nlink = 1;
+	s->st_uid = (p = getpwnam(d->uid)) == NULL ? 0 : p->pw_uid;
+	s->st_gid = (g = getgrnam(d->gid)) == NULL ? 0 : g->gr_gid;
+	s->st_size = d->length;
+	s->st_blksize = msize - IOHDRSZ;
+	s->st_blocks = d->length / (msize - IOHDRSZ) + 1;
+	s->st_atime = d->atime;
+	s->st_mtime = s->st_ctime = d->mtime;
+	s->st_rdev = 0;
+}	
+
+void
+clearcache(const char *path)
+{
+	char	*s, *p;
+
+	s = estrdup(path);
+	p = strrchr(s, '/');
+	*p = '\0';
+	lookupdir(s, DEL);
+	free(s);
+	return;
+}
+
+Dir*
+iscached(const char *path)
+{
+	FDir	*fd;
+	Dir	*d, e;
+	char	*dname, *bname;
+
+	dname = estrdup(path);
+	bname = strrchr(dname, '/');
+	*bname++ = '\0';
+	if((fd = lookupdir(dname, GET)) == NULL){
+		free(dname);
+		return NULL;
+	}
+	e.name = bname;
+	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), dircmp);
+	free(dname);
+	return d;
+}
 
 void
 usage(void)

@@ -58,6 +58,8 @@ int	_9pread(FFid*, void*, u32int);
 int	_9pwrite(FFid*, void*, u32int);
 long	_9pdirread(FFid*, Dir**);
 
-Dir	*isdircached(const char*);
-FDir	*lookupdir(const char*, int);
 int	dircmp(const void*, const void*);
+FDir	*lookupdir(const char*, int);
+Dir	*iscached(const char*);
+void	clearcache(const char*);
+void	usage(void);

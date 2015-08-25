@@ -502,6 +502,6 @@ main(int argc, char *argv[])
 void
 usage(void)
 {
-	fprintf(stderr, "usage: 9pfs [-anU] [-p port] [-u user] [host] [mtpt]\n");
+	fprintf(stderr, "usage: 9pfs [-anU] [-p port] [-u user] host mtpt\n");
 	exit(2);
 }

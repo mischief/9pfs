@@ -50,6 +50,6 @@ FFid	*_9pcreate(FFid*, char*, int, int);
 int	_9premove(FFid*);
 int	_9pread(FFid*, void*, u32int);
 int	_9pwrite(FFid*, void*, u32int);
-int	_9pdirread(FFid*, Dir**);
+long	_9pdirread(FFid*, Dir**);
 
 Dir	*isdircached(const char*);

@@ -338,8 +338,8 @@ _9premove(FFid *f)
 	return 0;
 }
 
-u32int
-dirpackage(uchar *buf, u32int ts, Dir **d)
+long
+dirpackage(uchar *buf, long ts, Dir **d)
 {
 	char *s;
 	long ss, i, n, nn, m;
@@ -390,27 +390,24 @@ dirpackage(uchar *buf, u32int ts, Dir **d)
 int
 dircmp(const void *v1, const void *v2)
 {
-	const Dir *e, *d;
-
-	e = v1;
-	d = v2;
-	return strcmp(e->name, d->name);
+	return strcmp(((Dir*)v1)->name, ((Dir*)v2)->name);
 }
 
-int
+long
 _9pdirread(FFid *f, Dir **d)
 {
 	FDir	*fdir;
 	uchar	*buf;
-	u32int	ts, n;
-	u64int	bufsize, r;
+	int	t;
+	u32int	n;
+	long	bufsize, r;
 
 	n = f->iounit;
 	bufsize = DIRMAX;
 	buf = emalloc(bufsize);
 	r = 0;
-	while((ts = _9pread(f, buf+r, n)) > 0){
-		r += ts;
+	while((t = _9pread(f, buf+r, n)) > 0){
+		r += t;
 		if(r > bufsize - n){
 			bufsize += DIRMAX;
 			buf = erealloc(buf, bufsize);
@@ -420,14 +417,14 @@ _9pdirread(FFid *f, Dir **d)
 		free(buf);
 		return r;
 	}
-	ts = dirpackage(buf, r, d);
+	r = dirpackage(buf, r, d);
 	if((fdir = lookupdir(f->path, PUT)) != NULL){
 		fdir->dirs = *d;
-		fdir->ndirs = ts;
+		fdir->ndirs = r;
 		qsort(fdir->dirs, fdir->ndirs, sizeof(*fdir->dirs), dircmp);
 	}
 	free(buf);
-	return ts;
+	return r;
 }
 
 int

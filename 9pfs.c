@@ -32,6 +32,20 @@ enum
 
 void	usage(void);
 
+FDir*
+clearcache(const char *path)
+{
+	FDir	*d;
+	char	*s, *p;
+
+	s = estrdup(path);
+	p = strrchr(s, '/');
+	*p = '\0';
+	d = lookupdir(s, DEL);
+	free(s);
+	return d;
+}
+
 void
 dir2stat(struct stat *s, Dir *d)
 {
@@ -90,6 +104,8 @@ fsreleasedir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
+	if((FFid*)ffi->fh == NULL)
+		return 0;
 	f = (FFid*)ffi->fh;
 	if((f->qid.type & QTDIR) == 0)
 		return -ENOTDIR;
@@ -123,6 +139,7 @@ fstruncate(const char *path, off_t off)
 		}
 	}
 	_9pclunk(f);
+	clearcache(path);
 	return 0;
 }
 
@@ -162,6 +179,7 @@ fsrename(const char *opath, const char *npath)
 	_9pclunk(f);
 	free(dname);
 	free(d);
+	clearcache(opath);
 	return 0;
 }	
 	
@@ -220,6 +238,7 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 		}
 	}
 	ffi->fh = (u64int)f;
+	clearcache(path);
 	return 0;
 }
 
@@ -232,6 +251,7 @@ fsunlink(const char *path)
 		return -ENOENT;
 	if(_9premove(f) == -1)
 		return -EIO;
+	clearcache(path);
 	return 0;
 }
 
@@ -264,6 +284,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 	f->offset = off;
 	if((r = _9pwrite(f, (char*)buf, size)) < 0)
 		return -EIO;
+	clearcache(path);
 	return r;
 }
 
@@ -271,7 +292,12 @@ int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
+	FDir	*d;
 
+	if((d = lookupdir(path, GET)) != NULL){
+		ffi->fh = (u64int)NULL;
+		return 0;
+	}
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	f->mode = ffi->flags & O_ACCMODE;
@@ -316,6 +342,7 @@ fsmkdir(const char *path, mode_t perm)
 	}
 	_9pclunk(f);
 	free(dname);
+	clearcache(path);
 	return 0;
 }
 
@@ -332,6 +359,7 @@ fsrmdir(const char *path)
 	}
 	if(_9premove(f) == -1)
 		return -EIO;
+	clearcache(path);
 	return 0;
 }
 
@@ -339,14 +367,20 @@ int
 fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	off_t off, struct fuse_file_info *ffi)
 {
+	FDir		*f;
 	Dir		*d, *e;
 	long		n;
 	struct stat	s;
 
 	ffd(data, ".", NULL, 0);
 	ffd(data, "..", NULL, 0);
-	if((n = _9pdirread((FFid*)ffi->fh, &d)) < 0)
-		return -EIO;
+	if((f = lookupdir(path, GET)) != NULL){
+		d = f->dirs;
+		n = f->ndirs;
+	}else{
+		if((n = _9pdirread((FFid*)ffi->fh, &d)) < 0)
+			return -EIO;
+	}
 	for(e = d; e < d + n; e++){
 		s.st_ino = e->qid.path;
 		s.st_mode = e->mode & 0777;

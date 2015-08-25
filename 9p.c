@@ -17,8 +17,6 @@
 #include "9pfs.h"
 #include "util.h"
 
-#define	 FDEL	((void*)~0)
-
 char *calls2str[] = {
   [Tversion]	"Tversion",
   [Tauth]	"Tauth",
@@ -50,21 +48,12 @@ char *calls2str[] = {
   [Rwstat]	"Rwstat"
 };
 
-enum
-{
-	PUT,
-	DEL,
-	GET,
-	NHASH = 1009
-};
-
 void	*tbuf, *rbuf;
 FFid	*fidhash[NHASH];
 FDir	*dirhash[NHASH];
 
 FFid	*lookupfid(u32int, int);
 FFid	*uniqfid(void);
-FDir	*lookupdir(char*, int);
 
 void
 init9p(void)
@@ -550,10 +539,10 @@ fidclone(FFid *f)
 }
 
 uint
-strkey(char *s)
+strkey(const char *s)
 {
-	char	*p;
-	uint	h;
+	const char	*p;
+	uint		h;
 
 	h = 0;
 	for(p = s; *p != '\0'; p++)
@@ -562,7 +551,7 @@ strkey(char *s)
 }
 
 FDir*
-lookupdir(char *path, int act)
+lookupdir(const char *path, int act)
 {
 	FDir	**fdloc, *fd;
 	uint	h;

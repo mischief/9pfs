@@ -1,8 +1,14 @@
 enum
 {
-	ROOTFID,
-	AUTHFID
+	ROOTFID = 0,
+	AUTHFID,
+	PUT = 0,
+	DEL,
+	GET,
+	NHASH = 1009
 };
+
+#define	 FDEL	((void*)~0)
 
 typedef struct FFid	FFid;
 typedef struct FDir	FDir;
@@ -23,7 +29,7 @@ struct FDir
 	FDir	*link;
 	char	*path;
 	Dir	*dirs;
-	int	ndirs;
+	long	ndirs;
 	Dir	**sdirs;
 };
 
@@ -53,3 +59,4 @@ int	_9pwrite(FFid*, void*, u32int);
 long	_9pdirread(FFid*, Dir**);
 
 Dir	*isdircached(const char*);
+FDir	*lookupdir(const char*, int);

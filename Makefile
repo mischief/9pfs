@@ -10,7 +10,6 @@ OBJS=9p.o\
 	lib/convS2M.o\
 	lib/read9pmsg.o\
 	lib/readn.o\
-	lib/cleanname.o\
 	lib/auth_proxy.o\
 	lib/auth_rpc.o\
 	lib/auth_getkey.o

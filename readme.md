@@ -13,27 +13,30 @@ it works equally well on OpenBSD, FreeBSD, or Linux. It was expressly
 written for OpenBSD and developed primarily on that OS.
 
 It is also faster than 9pfuse. Below is the time it took to run du
--a on my home directory on a plan 9 installation mounted by 9pfs:
+-a on my home directory on a plan 9 installation mounted by 9pfs.
 
 ```
 $ time du -a > /dev/null
 
-real    0m2.662s
-user    0m0.017s
-sys     0m0.053s
+real    0m2.909s
+user    0m0.047s
+sys     0m0.107s
 $ time du -a > /dev/null
 
-real    0m2.475s
+real    0m0.194s
 user    0m0.007s
-sys     0m0.037s
+sys     0m0.023s
 $ time du -a > /dev/null
 
-real    0m2.487s
-user    0m0.007s
-sys     0m0.037s
+real    0m0.212s
+user    0m0.013s
+sys     0m0.020s
 ```
 
-And this is the time it takes for 9pfuse:
+The first time trial above is slow as 9pfs builds a cache as it reads
+directories. The second and third trials are subsequently much faster.
+
+Below is the time it takes for 9pfuse:
 
 ```
 $ time du -a > /dev/null

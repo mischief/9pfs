@@ -60,3 +60,4 @@ long	_9pdirread(FFid*, Dir**);
 
 Dir	*isdircached(const char*);
 FDir	*lookupdir(const char*, int);
+int	dircmp(const void*, const void*);

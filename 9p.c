@@ -591,23 +591,3 @@ lookupdir(const char *path, int act)
 	}
 	return fd;
 }
-
-Dir*
-isdircached(const char *path)
-{
-	FDir	*fd;
-	Dir	*d, e;
-	char	*dname, *bname;
-
-	dname = estrdup(path);
-	bname = strrchr(dname, '/');
-	*bname++ = '\0';
-	if((fd = lookupdir(dname, GET)) == NULL){
-		free(dname);
-		return NULL;
-	}
-	e.name = bname;
-	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), dircmp);
-	free(dname);
-	return d;
-}

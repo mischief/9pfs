@@ -32,17 +32,36 @@ enum
 
 void	usage(void);
 
-FDir*
+void
 clearcache(const char *path)
 {
-	FDir	*d;
 	char	*s, *p;
 
 	s = estrdup(path);
 	p = strrchr(s, '/');
 	*p = '\0';
-	d = lookupdir(s, DEL);
+	lookupdir(s, DEL);
 	free(s);
+	return;
+}
+
+Dir*
+iscached(const char *path)
+{
+	FDir	*fd;
+	Dir	*d, e;
+	char	*dname, *bname;
+
+	dname = estrdup(path);
+	bname = strrchr(dname, '/');
+	*bname++ = '\0';
+	if((fd = lookupdir(dname, GET)) == NULL){
+		free(dname);
+		return NULL;
+	}
+	e.name = bname;
+	d = bsearch(&e, fd->dirs, fd->ndirs, sizeof(*fd->dirs), dircmp);
+	free(dname);
 	return d;
 }
 
@@ -76,7 +95,7 @@ fsgetattr(const char *path, struct stat *st)
 	FFid	*f;
 	Dir	*d;
 
-	if((d = isdircached(path)) != NULL){
+	if((d = iscached(path)) != NULL){
 		dir2stat(st, d);
 		return 0;
 	}

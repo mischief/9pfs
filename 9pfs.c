@@ -374,7 +374,6 @@ struct fuse_operations fsops = {
 int
 main(int argc, char *argv[])
 {
-	FFid			rfid, afid;
 	AuthInfo		*ai;
 	struct sockaddr_un	uaddr;
 	struct sockaddr		*addr;
@@ -450,8 +449,6 @@ main(int argc, char *argv[])
 
 	init9p();
 	msize = _9pversion(MSIZE);
-	memset(&rfid, 0, sizeof(rfid));
-	memset(&afid, 0, sizeof(afid));
 	if(doauth){
 		authfid = _9pauth(AUTHFID, user, NULL);
 		ai = auth_proxy(authfid, auth_getkey, "proto=p9any role=client");

@@ -170,7 +170,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		f->mode |= OTRUNC;
 	if(_9popen(f) == -1){
 		_9pclunk(f);
-		return -EIO;
+		return -EACCES;
 	}
 	ffi->fh = (u64int)f;
 	return 0;

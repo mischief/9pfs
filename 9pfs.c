@@ -126,6 +126,8 @@ fsrename(const char *opath, const char *npath)
 	char	*dname, *bname;
 	int	n;
 
+	if(iscachectl(opath))
+		return -EACCES;
 	if((f = _9pwalk(opath)) == NULL)
 		return -ENOENT;
 	dname = estrdup(npath);
@@ -184,6 +186,8 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 	FFid	*f;
 	char	*dname, *bname;
 
+	if(iscachectl(path))
+		return -EACCES;
 	if((f = _9pwalk(path)) == NULL){
 		dname = estrdup(path);
 		if((bname = strrchr(dname, '/')) == dname){
@@ -224,6 +228,8 @@ fsunlink(const char *path)
 {
 	FFid	*f;
 
+	if(iscachectl(path))
+		return -EACCES;
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	if(_9premove(f) == -1)
@@ -239,6 +245,8 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	FFid	*f;
 	int 	r;
 
+	if(iscachectl(path))
+		return 0;
 	f = (FFid*)ffi->fh;
 	if(f->mode & O_WRONLY)
 		return -EACCES;

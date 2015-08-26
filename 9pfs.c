@@ -50,9 +50,8 @@ fsgetattr(const char *path, struct stat *st)
 		dir2stat(st, d);
 		return 0;
 	}
-	if((f = _9pwalk(path)) == NULL){
+	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
-	}
 	if((d = _9pstat(f)) == NULL){
 		_9pclunk(f);
 		return -EIO;

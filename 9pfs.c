@@ -281,7 +281,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	f->mode = ffi->flags & O_ACCMODE;
 	if(_9popen(f) == -1){
 		_9pclunk(f);
-		return -EIO;
+		return -EACCES;
 	}
 	if(!(f->qid.type & QTDIR)){
 		_9pclunk(f);

@@ -30,7 +30,6 @@ struct FDir
 	char	*path;
 	Dir	*dirs;
 	long	ndirs;
-	Dir	**sdirs;
 };
 
 FILE	*logfile;

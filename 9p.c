@@ -109,7 +109,6 @@ _9pversion(u32int m)
 	Fcall	tver, rver;
 
 	msize = m;
-	memset(&tver, 0, sizeof(tver));
 	tver.type = Tversion;
 	tver.msize = m;
 	tver.version = VERSION9P;
@@ -131,7 +130,6 @@ _9pauth(u32int afid, char *uname, char *aname)
 	FFid	*f;
 	Fcall	tauth, rauth;
 
-	memset(&tauth, 0, sizeof(tauth));
 	tauth.type = Tauth;
 	tauth.afid = afid;
 	tauth.uname = uname;
@@ -152,7 +150,6 @@ _9pattach(u32int fid, u32int afid, char* uname, char *aname)
 	FFid		*f;
 	Fcall		tattach, rattach;
 
-	memset(&tattach, 0, sizeof(tattach));
 	tattach.type = Tattach;
 	tattach.fid = fid;
 	tattach.afid = afid;
@@ -175,7 +172,6 @@ _9pwalkr(FFid *r, char *path)
 	char	**s, *buf, *bp;
 
 	buf = bp = estrdup(path);
-	memset(&twalk, 0, sizeof(twalk));
 	f = NULL;
 	twalk.type = Twalk;
 	twalk.newfid = r->fid;
@@ -224,7 +220,6 @@ _9pstat(FFid *f)
 	Dir	*d;
 	Fcall	tstat, rstat;
 
-	memset(&tstat, 0, sizeof(tstat));
 	tstat.type = Tstat;
 	tstat.fid = f->fid;
 	if(do9p(&tstat, &rstat) == -1)
@@ -250,7 +245,6 @@ _9pwstat(FFid *f, Dir *d)
 		free(st);
 		return -1;
 	}
-	memset(&twstat, 0, sizeof(twstat));
 	twstat.type = Twstat;
 	twstat.fid = f->fid;
 	twstat.nstat = n;
@@ -268,7 +262,6 @@ _9popen(FFid *f)
 {
 	Fcall	topen, ropen;
 	
-	memset(&topen, 0, sizeof(topen));
 	topen.type = Topen;
 	topen.fid = f->fid;
 	topen.mode = f->mode;
@@ -287,7 +280,6 @@ _9pcreate(FFid *f, char *name, int perm, int isdir)
 	perm &= 0777;
 	if(isdir)
 		perm |= DMDIR;
-	memset(&tcreate, 0, sizeof(tcreate));
 	tcreate.type = Tcreate;
 	tcreate.fid = f->fid;
 	tcreate.name = name;
@@ -312,7 +304,6 @@ _9premove(FFid *f)
 
 	if(f == NULL)
 		return 0;
-	memset(&tremove, 0, sizeof(tremove));
 	tremove.type = Tremove;
 	tremove.fid = f->fid;
 	if(do9p(&tremove, &rremove) == -1){
@@ -418,7 +409,6 @@ _9pread(FFid *f, void *buf, u32int n)
 {
 	Fcall	tread, rread;
 
-	memset(&tread, 0, sizeof(tread));
 	tread.type = Tread;
 	tread.fid = f->fid;
 	tread.offset = f->offset;
@@ -437,7 +427,6 @@ _9pwrite(FFid *f, void *buf, u32int n)
 
 	if(n == 0)
 		return 0;
-	memset(&twrite, 0, sizeof(twrite));
 	twrite.type = Twrite;
 	twrite.fid = f->fid;
 	twrite.offset = f->offset;
@@ -456,7 +445,6 @@ _9pclunk(FFid *f)
 
 	if(f == NULL)
 		return 0;
-	memset(&tclunk, 0, sizeof(tclunk));
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
 	if(lookupfid(f->fid, DEL) != FDEL)
@@ -518,7 +506,6 @@ fidclone(FFid *f)
 	FFid	*newf;
 
 	newf = uniqfid();
-	memset(&twalk, 0, sizeof(twalk));
 	twalk.type = Twalk;
 	twalk.fid = f->fid;
 	twalk.newfid = newf->fid;

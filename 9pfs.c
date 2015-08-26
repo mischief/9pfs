@@ -26,6 +26,7 @@
 #include "util.h"
 
 #define CACHECTL ".fscache"
+
 enum
 {
 	MSIZE = 8192

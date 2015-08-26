@@ -47,7 +47,7 @@ and attach to the 9P service.
 inconsistencies if a different 9P client is connected
 to and making changes to the same 9P service. There
 is a virtual control file
-.Ql .cache
+.Ql .fscache
 contained in each directory of 9pfs.
 Writing anything to that file will clear the cache.
 .Sh ENVIRONMENT
@@ -104,3 +104,6 @@ directory.
 .Pp
 Moving a file to a different directory is not implemented.
 To do so, copy the file and then remove it.
+.Pp
+You cannot access or create a file named .fscache in
+any directory.

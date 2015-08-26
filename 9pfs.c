@@ -25,6 +25,7 @@
 #include "auth.h"
 #include "util.h"
 
+#define CACHECTL ".fscache"
 enum
 {
 	MSIZE = 8192
@@ -351,7 +352,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 
 	ffd(data, ".", NULL, 0);
 	ffd(data, "..", NULL, 0);
-	ffd(data, ".cache", NULL, 0);
+	ffd(data, CACHECTL, NULL, 0);
 	if((f = lookupdir(path, GET)) != NULL){
 		d = f->dirs;
 		n = f->ndirs;
@@ -542,7 +543,7 @@ iscachectl(const char *path)
 
 	s = strrchr(path, '/');
 	s++;
-	if(strcmp(s, ".cache") == 0)
+	if(strcmp(s, CACHECTL) == 0)
 		return 1;
 	return 0;
 }

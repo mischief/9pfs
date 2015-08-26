@@ -268,7 +268,10 @@ _9popen(FFid *f)
 	if(do9p(&topen, &ropen) == -1)
 		return -1;
 	f->qid = ropen.qid;
-	f->iounit = ropen.iounit;
+	if(ropen.iounit != 0)
+		f->iounit = ropen.iounit;
+	else
+		f->iounit = msize - IOHDRSZ;
 	return 0;
 }
 
@@ -413,10 +416,11 @@ _9pread(FFid *f, void *buf, u32int n)
 	tread.fid = f->fid;
 	tread.offset = f->offset;
 	tread.count = n < f->iounit ? n : f->iounit;
-	if(do9p(&tread, &rread) == -1)
+	if(do9p(&tread, &rread) == -1){
 		return -1;
-	memcpy(buf, rread.data, rread.count);
+	}
 	f->offset += rread.count;
+	memcpy(buf, rread.data, rread.count);
 	return rread.count;
 }
 

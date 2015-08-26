@@ -400,7 +400,7 @@ main(int argc, char *argv[])
 	struct sockaddr		*addr;
 	struct addrinfo		*ainfo;
 	struct passwd		*pw;
-	char			logstr[100], *fusearg[8], **fargp, port[10], user[30];
+	char			logstr[100], *fusearg[6], **fargp, port[10], user[30];
 	int			ch, doauth, uflag, n, alen, e;
 
 	fargp = fusearg;
@@ -442,10 +442,6 @@ main(int argc, char *argv[])
 	if(argc != 2)
 		usage();
 	*fargp++ = "-s";
-#ifdef	__linux__
-	*fargp++ = "-o";
-	*fargp++ = "sync_read";
-#endif
 	*fargp++ = argv[1];
 	if(debug){
 		snprintf(logstr, sizeof(logstr), "/tmp/9pfs-%d.log", getpid());

@@ -138,10 +138,6 @@ fsrename(const char *opath, const char *npath)
 		return -EACCES;
 	}
 	*bname++ = '\0';
-	if((f = _9pwalk(opath)) == NULL){
-		free(dname);
-		return -ENOENT;
-	}
 	if((d = _9pstat(f)) == NULL){
 		free(dname);
 		return -EIO;

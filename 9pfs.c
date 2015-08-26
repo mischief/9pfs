@@ -46,6 +46,8 @@ fsgetattr(const char *path, struct stat *st)
 
 	if(iscachectl(path)){
 		st->st_mode = 0222 | S_IFREG;
+		st->st_uid = getuid();
+		st->st_gid = getgid();
 		return 0;
 	}
 	if((d = iscached(path)) != NULL){

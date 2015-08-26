@@ -416,9 +416,8 @@ _9pread(FFid *f, void *buf, u32int n)
 	tread.fid = f->fid;
 	tread.offset = f->offset;
 	tread.count = n < f->iounit ? n : f->iounit;
-	if(do9p(&tread, &rread) == -1){
+	if(do9p(&tread, &rread) == -1)
 		return -1;
-	}
 	f->offset += rread.count;
 	memcpy(buf, rread.data, rread.count);
 	return rread.count;

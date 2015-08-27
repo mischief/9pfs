@@ -175,9 +175,9 @@ _9pwalkr(FFid *r, char *path)
 	f = NULL;
 	twalk.type = Twalk;
 	twalk.newfid = r->fid;
-	while(buf != NULL){
-		for(s = twalk.wname; s < twalk.wname + MAXWELEM && buf != NULL; s++)
-			*s = strsep(&buf, "/");
+	while(bp != NULL){
+		for(s = twalk.wname; s < twalk.wname + MAXWELEM && bp != NULL; s++)
+			*s = strsep(&bp, "/");
 		_9pclunk(f);
 		twalk.fid = twalk.newfid;
 		f = uniqfid();
@@ -186,12 +186,12 @@ _9pwalkr(FFid *r, char *path)
 		if(do9p(&twalk, &rwalk) == -1 || rwalk.nwqid < twalk.nwname){
 			if(lookupfid(f->fid, DEL) != FDEL)
 				errx(1, "Fid %d not found in hash", f->fid);
-			free(bp);
+			free(buf);
 			return NULL;
 		}
 	}
 	f->qid = rwalk.wqid[rwalk.nwqid - 1];
-	free(bp);
+	free(buf);
 	return f;
 }
 

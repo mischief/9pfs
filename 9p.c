@@ -398,11 +398,10 @@ _9pdirread(FFid *f, Dir **d)
 		return r;
 	}
 	r = dirpackage(buf, r, d);
-	if((fdir = lookupdir(f->path, PUT)) != NULL){
-		fdir->dirs = *d;
-		fdir->ndirs = r;
-		qsort(fdir->dirs, fdir->ndirs, sizeof(*fdir->dirs), dircmp);
-	}
+	fdir = lookupdir(f->path, PUT);
+	fdir->dirs = *d;
+	fdir->ndirs = r;
+	qsort(fdir->dirs, fdir->ndirs, sizeof(*fdir->dirs), dircmp);
 	free(buf);
 	return r;
 }
@@ -560,9 +559,9 @@ lookupdir(const char *path, int act)
 			fd->ndirs = 0;
 		}else{
 			fd = emalloc(sizeof(*fd));
-			fd->path = estrdup(path);
 			*fdloc = fd;
 		}
+		fd->path = estrdup(path);
 		break;
 	case DEL:
 		if(*fdloc == NULL)

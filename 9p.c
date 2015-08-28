@@ -559,9 +559,9 @@ lookupdir(const char *path, int act)
 			fd->ndirs = 0;
 		}else{
 			fd = emalloc(sizeof(*fd));
+			fd->path = estrdup(path);
 			*fdloc = fd;
 		}
-		fd->path = estrdup(path);
 		break;
 	case DEL:
 		if(*fdloc == NULL)

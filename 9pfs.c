@@ -45,7 +45,7 @@ fsgetattr(const char *path, struct stat *st)
 	Dir	*d;
 
 	if(iscachectl(path)){
-		st->st_mode = 0222 | S_IFREG;
+		st->st_mode = 0666 | S_IFREG;
 		st->st_uid = getuid();
 		st->st_gid = getgid();
 		return 0;
@@ -241,8 +241,14 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	FFid	*f;
 	int 	r;
 
-	if(iscachectl(path))
-		return 0;
+	if(iscachectl(path)){
+		size = sizeof("cleared\n") - 1;
+		if(off >= size)
+			return 0;
+		memcpy(buf, "cleared\n" + off, size - off);
+		dprint("fsread cleared %d", size);
+		return size;
+	}
 	f = (FFid*)ffi->fh;
 	if(f->mode & O_WRONLY)
 		return -EACCES;

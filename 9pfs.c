@@ -246,7 +246,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 		if(off >= size)
 			return 0;
 		memcpy(buf, "cleared\n" + off, size - off);
-		dprint("fsread cleared %d", size);
+		clearcache(path);
 		return size;
 	}
 	f = (FFid*)ffi->fh;

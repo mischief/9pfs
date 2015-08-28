@@ -48,6 +48,7 @@ fsgetattr(const char *path, struct stat *st)
 		st->st_mode = 0666 | S_IFREG;
 		st->st_uid = getuid();
 		st->st_gid = getgid();
+		st->st_size = sizeof("cleared\n") - 1;
 		return 0;
 	}
 	if((d = iscached(path)) != NULL){

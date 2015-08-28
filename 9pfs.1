@@ -49,7 +49,8 @@ to and making changes to the same 9P service. There
 is a virtual control file
 .Ql .fscache
 contained in each directory of 9pfs.
-Writing anything to that file will clear the cache.
+Reading or Writing anything to that file will clear
+the cache in that directory.
 .Sh ENVIRONMENT
 .Bl -tag -width FACTOTUM
 .It Ev FACTOTUM

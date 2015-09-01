@@ -115,7 +115,7 @@ _9pversion(u32int m)
 	tbuf = erealloc(tbuf, m);
 	rbuf = erealloc(rbuf, m);
 	if(do9p(&tver, &rver) != 0)
-		errx(1, "Could not establish version");
+		errx(1, "Could not establish version: %s", rver.ename);
 	if(rver.msize != m){
 		msize = rver.msize;
 		tbuf = erealloc(tbuf, msize);

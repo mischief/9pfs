@@ -1,7 +1,8 @@
 BIN=/usr/local/bin
 MAN=/usr/share/man/man1
 TARG=9pfs
-OBJS=9p.o\
+OBJS=9pfs.o\
+	9p.o\
 	util.o\
 	lib/strecpy.o\
 	lib/convD2M.o\
@@ -13,6 +14,11 @@ OBJS=9p.o\
 	lib/auth_proxy.o\
 	lib/auth_rpc.o\
 	lib/auth_getkey.o
+HFILES=9pfs.h\
+	auth.h\
+	fcall.h\
+	util.h\
+	libc.h
 CC=	cc
 DEBUG=	-g
 CFLAGS=	-O2 -pipe\
@@ -31,11 +37,11 @@ install:	${TARG} ${TARG}.1
 man:	${TARG}.1
 	install -m 444 -g bin ${TARG}.1 ${MAN}
 
-${TARG}:	${TARG}.o ${OBJS}
-	${CC} ${LDFLAGS} -o $@ ${TARG}.o ${OBJS} ${LIB} ${LDADD}
+${TARG}:	${OBJS} ${HFILES}
+	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LIB} ${LDADD}
 
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${TARG} ${LIB} ${OBJS} *.o
+	rm -f ${TARG} ${LIB} ${OBJS}

@@ -59,3 +59,9 @@ long	_9pdirread(FFid*, Dir**);
 
 int	dircmp(const void*, const void*);
 FDir	*lookupdir(const char*, int);
+
+#define DPRINT(...)				\
+do{						\
+	if(debug)				\
+		fprintf(logfile, __VA_ARGS__);	\
+}while(0)

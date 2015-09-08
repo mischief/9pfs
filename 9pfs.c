@@ -34,16 +34,19 @@ enum
 
 void	dir2stat(struct stat*, Dir*);
 Dir	*iscached(const char*);
+Dir	*addtocache(const char*);
 void	clearcache(const char*);
 int	iscachectl(const char *);
 void	usage(void);
 
+Dir	*rootdir;
+
 int
 fsgetattr(const char *path, struct stat *st)
 {
-	FFid	*f;
 	Dir	*d;
 
+	DPRINT("fsgetattr %s\n", path);
 	if(iscachectl(path)){
 		st->st_mode = 0666 | S_IFREG;
 		st->st_uid = getuid();
@@ -51,19 +54,13 @@ fsgetattr(const char *path, struct stat *st)
 		st->st_size = sizeof("cleared\n") - 1;
 		return 0;
 	}
-	if((d = iscached(path)) != NULL){
-		dir2stat(st, d);
-		return 0;
+	if((d = iscached(path)) == NULL){
+		DPRINT("fsgetattr %s is not cached\n", path);
+		d = addtocache(path);
 	}
-	if((f = _9pwalk(path)) == NULL)
-		return -ENOENT;
-	if((d = _9pstat(f)) == NULL){
-		_9pclunk(f);
+	if(d == NULL)
 		return -EIO;
-	}
 	dir2stat(st, d);
-	_9pclunk(f);
-	free(d);
 	return 0;
 }
 
@@ -374,7 +371,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 		if((n = _9pdirread((FFid*)ffi->fh, &d)) < 0)
 			return -EIO;
 	}
-	for(e = d; e < d + n; e++){
+	for(e = d; e < d+n; e++){
 		s.st_ino = e->qid.path;
 		s.st_mode = e->mode & 0777;
 		ffd(data, e->name, &s, 0);
@@ -421,17 +418,16 @@ main(int argc, char *argv[])
 	while((ch = getopt(argc, argv, ":dnUap:u:")) != -1){
 		switch(ch){
 		case 'd':
-			debug = 1;
+			debug++;
 			*fargp++ = "-d";
 			break;
 		case 'n':
-			doauth = 0;
 			break;
 		case 'U':
-			uflag = 1;
+			uflag++;
 			break;
 		case 'a':
-			doauth = 1;
+			doauth++;
 			break;
 		case 'p':
 			strecpy(port, port+sizeof(port), optarg);
@@ -485,6 +481,9 @@ main(int argc, char *argv[])
 		auth_freeAI(ai);
 	}
 	rootfid = _9pattach(ROOTFID, doauth ? AUTHFID : NOFID, user, NULL);
+	if((rootdir = _9pstat(rootfid)) == NULL)
+		errx(1, "Could not stat root");
+	DPRINT("About to fuse_main\n");
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
 }	
@@ -535,6 +534,8 @@ iscached(const char *path)
 
 	dname = estrdup(path);
 	bname = strrchr(dname, '/');
+	if(bname == dname)
+		return rootdir;
 	*bname++ = '\0';
 	if((fd = lookupdir(dname, GET)) == NULL){
 		free(dname);
@@ -546,6 +547,28 @@ iscached(const char *path)
 	return d;
 }
 
+Dir*
+addtocache(const char *path)
+{
+	FFid	*f;
+	Dir	*d;
+	char	*dname, *bname;
+	long	n;
+
+	DPRINT("addtocache %s\n", path);
+	dname = estrdup(path);
+	bname = strrchr(dname, '/');
+	*bname++ = '\0';
+	if((f = _9pwalk(dname)) == NULL)
+		return NULL;
+	f->mode |= O_RDONLY;
+	if(_9popen(f) == -1)
+		return NULL;
+	if((n = _9pdirread(f, &d)) < 0)
+		return NULL;
+	return iscached(path);
+}
+	
 int
 iscachectl(const char *path)
 {

@@ -158,7 +158,7 @@ _9pattach(u32int fid, u32int afid, char* uname, char *aname)
 	if(do9p(&tattach, &rattach) == -1)
 		errx(1, "Could not attach");
 	f = lookupfid(fid, PUT);
-	f->path = "/";
+	f->path = "";
 	f->fid = fid;
 	f->qid = rattach.qid;
 	return f;
@@ -201,11 +201,9 @@ _9pwalk(const char *path)
 	FFid	*f;
 	char	*pnew;
 
-	pnew = estrdup(path);
-	if(strcmp(pnew, "/") == 0){
-		free(pnew);
+	if(*path == '\0' || strcmp(path, "/") == 0)
 		return fidclone(rootfid);
-	}
+	pnew = estrdup(path);
 	if((f = _9pwalkr(rootfid, pnew+1)) == NULL){
 		free(pnew);
 		return NULL;
@@ -382,6 +380,7 @@ _9pdirread(FFid *f, Dir **d)
 	u32int	n;
 	long	bufsize, r;
 
+	DPRINT("_9pdirread on %s\n", f->path);
 	n = f->iounit;
 	bufsize = DIRMAX;
 	buf = emalloc(bufsize);

@@ -36,7 +36,8 @@ void	dir2stat(struct stat*, Dir*);
 Dir	*iscached(const char*);
 Dir	*addtocache(const char*);
 void	clearcache(const char*);
-int	iscachectl(const char *);
+int	iscachectl(const char*);
+char	*breakpath(char*);
 void	usage(void);
 
 Dir	*rootdir;
@@ -122,7 +123,6 @@ fsrename(const char *opath, const char *npath)
 	Dir	*d;
 	FFid	*f;
 	char	*dname, *bname;
-	int	n;
 
 	if(iscachectl(opath))
 		return -EACCES;
@@ -130,8 +130,7 @@ fsrename(const char *opath, const char *npath)
 		return -ENOENT;
 	dname = estrdup(npath);
 	bname = strrchr(dname, '/');
-	n = bname - dname;
-	if(strncmp(opath, npath, n) != 0){
+	if(strncmp(opath, npath, bname-dname) != 0){
 		free(dname);
 		return -EACCES;
 	}
@@ -184,23 +183,16 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 		return -EACCES;
 	if((f = _9pwalk(path)) == NULL){
 		dname = estrdup(path);
-		if((bname = strrchr(dname, '/')) == dname){
-			bname++;
-			f = fidclone(rootfid);
-		}else{
-			*bname++ = '\0';
-			f = _9pwalk(dname);
-		}
-		if(f == NULL){
+		bname = breakpath(dname);
+		if((f = _9pwalk(dname)) == NULL){
 			free(dname);
 			return -ENOENT;
 		}
 		f->mode = ffi->flags & O_ACCMODE;
 		f = _9pcreate(f, bname, perm, 0);
-		if(f == NULL){
-			free(dname);
-			return -EIO;
-		}
+		free(dname);
+		if(f == NULL)
+			return -EACCES;
 	}else{
 		if(ffi->flags | O_EXCL){
 			_9pclunk(f);
@@ -313,21 +305,14 @@ fsmkdir(const char *path, mode_t perm)
 		return -EEXIST;
 	}
 	dname = estrdup(path);
-	if((bname = strrchr(dname, '/')) == dname){
-		bname++;
-		f = fidclone(rootfid);
-	}else{
-		*bname++ = '\0';
-		f = _9pwalk(dname);
-	}
-	if(f == NULL){
+	bname = breakpath(dname);
+	if((f = _9pwalk(dname)) == NULL){
 		free(dname);
 		return -ENOENT;
 	}
-	f = _9pcreate(f, bname, perm, 1);
-	if(f == NULL){
+	if((f = _9pcreate(f, bname, perm, 1)) == NULL){
 		free(dname);
-		return -EIO;
+		return -EACCES;
 	}
 	_9pclunk(f);
 	free(dname);
@@ -515,13 +500,12 @@ dir2stat(struct stat *s, Dir *d)
 void
 clearcache(const char *path)
 {
-	char	*s, *p;
+	char	*dname;
 
-	s = estrdup(path);
-	p = strrchr(s, '/');
-	*p = '\0';
-	lookupdir(s, DEL);
-	free(s);
+	dname = estrdup(path);
+	breakpath(dname);
+	lookupdir(dname, DEL);
+	free(dname);
 	return;
 }
 
@@ -532,11 +516,10 @@ iscached(const char *path)
 	Dir	*d, e;
 	char	*dname, *bname;
 
-	dname = estrdup(path);
-	bname = strrchr(dname, '/');
-	if(bname == dname)
+	if(strcmp(path, "/") == 0)
 		return rootdir;
-	*bname++ = '\0';
+	dname = estrdup(path);
+	bname = breakpath(dname);
 	if((fd = lookupdir(dname, GET)) == NULL){
 		free(dname);
 		return NULL;
@@ -557,15 +540,22 @@ addtocache(const char *path)
 
 	DPRINT("addtocache %s\n", path);
 	dname = estrdup(path);
-	bname = strrchr(dname, '/');
-	*bname++ = '\0';
-	if((f = _9pwalk(dname)) == NULL)
+	bname = breakpath(dname);
+	if((f = _9pwalk(dname)) == NULL){
+		free(dname);
 		return NULL;
+	}
 	f->mode |= O_RDONLY;
-	if(_9popen(f) == -1)
+	if(_9popen(f) == -1){
+		free(dname);
 		return NULL;
-	if((n = _9pdirread(f, &d)) < 0)
+	}
+	DPRINT("addtocache about to dirread\n");
+	if((n = _9pdirread(f, &d)) < 0){
+		free(dname);
 		return NULL;
+	}
+	free(dname);
 	return iscached(path);
 }
 	
@@ -579,6 +569,16 @@ iscachectl(const char *path)
 	if(strcmp(s, CACHECTL) == 0)
 		return 1;
 	return 0;
+}
+
+char*
+breakpath(char *dname)
+{
+	char	*bname;
+
+	bname = strrchr(dname, '/');
+	*bname++ = '\0';
+	return bname;
 }
 
 void

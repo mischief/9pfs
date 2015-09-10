@@ -45,6 +45,7 @@ Dir	*rootdir;
 int
 fsgetattr(const char *path, struct stat *st)
 {
+	FFid	*f;
 	Dir	*d;
 
 	DPRINT("fsgetattr %s\n", path);
@@ -60,8 +61,20 @@ fsgetattr(const char *path, struct stat *st)
 		d = addtocache(path);
 	}
 	if(d == NULL)
+		return -EACCES;
+	if(strcmp(d->uid, "stub") != 0){ /* hack for aux/stub */
+		dir2stat(st, d);
+		return 0;
+	}
+	if((f = _9pwalk(path)) == NULL)
 		return -EIO;
+	if((d = _9pstat(f)) == NULL){
+		_9pclunk(f);
+		return -EIO;
+	}
 	dir2stat(st, d);
+	_9pclunk(f);
+	free(d);
 	return 0;
 }
 

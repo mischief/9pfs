@@ -26,6 +26,7 @@ CFLAGS=	-O2 -pipe\
 		-D_FILE_OFFSET_BITS=64\
 		-DFUSE_USE_VERSION=26\
 		-D_GNU_SOURCE
+LDFLAGS=
 LDADD=	-lfuse
 
 all:	${TARG}
@@ -38,10 +39,10 @@ installman:	${TARG}.1
 	install -m 444 -g bin ${TARG}.1 ${MAN}
 
 ${TARG}:	${OBJS} ${HFILES}
-	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LIB} ${LDADD}
+	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LDADD}
 
 .c.o:
 	${CC} -c -o $@ ${CFLAGS} $<
 
 clean:
-	rm -f ${TARG} ${LIB} ${OBJS}
+	rm -f ${TARG} ${OBJS}

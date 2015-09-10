@@ -48,9 +48,9 @@ inconsistencies if a different 9P client is connected
 to and making changes to the same 9P service. There
 is a virtual control file
 .Ql .fscache
-contained in each directory of 9pfs.
+in each directory served by 9pfs.
 Reading or writing anything to that file will clear
-the cache in that directory.
+the cache for that directory.
 .Sh ENVIRONMENT
 .Bl -tag -width FACTOTUM
 .It Ev FACTOTUM
@@ -63,8 +63,7 @@ is mounted at the path specified by the
 .Ev FACTOTUM
 environment variable. Plan 9 from User Space
 .Po
-aka
-.Lk https://swtch.com/plan9port/ plan9port
+.Lk https://swtch.com/plan9port/
 .Pc
 provides a port of factotum to
 UNIX-like operating systems.

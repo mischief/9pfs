@@ -34,7 +34,7 @@ install:	${TARG} ${TARG}.1
 	install -s -m 555 -g bin ${TARG} ${BIN}
 	install -m 444 -g bin ${TARG}.1 ${MAN}
 
-man:	${TARG}.1
+installman:	${TARG}.1
 	install -m 444 -g bin ${TARG}.1 ${MAN}
 
 ${TARG}:	${OBJS} ${HFILES}

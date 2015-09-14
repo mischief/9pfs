@@ -128,6 +128,7 @@ fstruncate(const char *path, off_t off)
 			free(d);
 			return -EACCES;
 		}
+		free(d);
 	}
 	_9pclunk(f);
 	clearcache(path);

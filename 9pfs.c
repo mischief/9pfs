@@ -61,7 +61,7 @@ fsgetattr(const char *path, struct stat *st)
 		d = addtocache(path);
 	}
 	if(d == NULL)
-		return -EACCES;
+		return -ENOENT;
 	if(strcmp(d->uid, "stub") != 0){ /* hack for aux/stub */
 		dir2stat(st, d);
 		return 0;
@@ -70,7 +70,7 @@ fsgetattr(const char *path, struct stat *st)
 		return -EIO;
 	if((d = _9pstat(f)) == NULL){
 		_9pclunk(f);
-		return -EIO;
+		return -EACCES;
 	}
 	dir2stat(st, d);
 	_9pclunk(f);

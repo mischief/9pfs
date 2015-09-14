@@ -375,7 +375,7 @@ long
 _9pdirread(FFid *f, Dir **d)
 {
 	FDir	*fdir;
-	uchar	*buf;
+	char	*buf;
 	int	t;
 	u32int	n;
 	long	bufsize, r;
@@ -396,7 +396,7 @@ _9pdirread(FFid *f, Dir **d)
 		free(buf);
 		return r;
 	}
-	r = dirpackage(buf, r, d);
+	r = dirpackage((uchar*)buf, r, d);
 	fdir = lookupdir(f->path, PUT);
 	fdir->dirs = *d;
 	fdir->ndirs = r;

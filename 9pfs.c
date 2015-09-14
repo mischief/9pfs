@@ -548,12 +548,12 @@ addtocache(const char *path)
 {
 	FFid	*f;
 	Dir	*d;
-	char	*dname, *bname;
+	char	*dname;
 	long	n;
 
 	DPRINT("addtocache %s\n", path);
 	dname = estrdup(path);
-	bname = breakpath(dname);
+	breakpath(dname);
 	if((f = _9pwalk(dname)) == NULL){
 		free(dname);
 		return NULL;

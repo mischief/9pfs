@@ -43,29 +43,11 @@ void	usage(void);
 Dir	*rootdir;
 
 int
-fsgetattr(const char *path, struct stat *st)
+stubstat(const char *path, struct stat *st)
 {
 	FFid	*f;
 	Dir	*d;
 
-	DPRINT("fsgetattr %s\n", path);
-	if(iscachectl(path)){
-		st->st_mode = 0666 | S_IFREG;
-		st->st_uid = getuid();
-		st->st_gid = getgid();
-		st->st_size = sizeof("cleared\n") - 1;
-		return 0;
-	}
-	if((d = iscached(path)) == NULL){
-		DPRINT("fsgetattr %s is not cached\n", path);
-		d = addtocache(path);
-	}
-	if(d == NULL)
-		return -ENOENT;
-	if(strcmp(d->uid, "stub") != 0){ /* hack for aux/stub */
-		dir2stat(st, d);
-		return 0;
-	}
 	if((f = _9pwalk(path)) == NULL)
 		return -EIO;
 	if((d = _9pstat(f)) == NULL){
@@ -75,6 +57,28 @@ fsgetattr(const char *path, struct stat *st)
 	dir2stat(st, d);
 	_9pclunk(f);
 	free(d);
+	return 0;
+}
+
+int
+fsgetattr(const char *path, struct stat *st)
+{
+	Dir	*d;
+
+	if(iscachectl(path)){
+		st->st_mode = 0666 | S_IFREG;
+		st->st_uid = getuid();
+		st->st_gid = getgid();
+		st->st_size = sizeof("cleared\n") - 1;
+		return 0;
+	}
+	if((d = iscached(path)) == NULL)
+		d = addtocache(path);
+	if(d == NULL)
+		return -ENOENT;
+	if(strcmp(d->uid, "stub") == 0) /* hack for aux/stub */
+		return stubstat(path, st);
+	dir2stat(st, d);
 	return 0;
 }
 

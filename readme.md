@@ -4,24 +4,22 @@ Unlike 9pfuse, it works equally well on Linux, OpenBSD, FreeBSD, and
 any other OS with a FUSE implementation.
 
 It is also faster than 9pfuse. Below is the time it took to run du
--a on my home directory on a plan 9 installation mounted by 9pfs.
+-a on the /sys/src directory on a [plan9front](http://9front.org)
+installation mounted by 9pfs.
 
 ```
-$ time du -a > /dev/null
-
-real    0m2.909s
-user    0m0.047s
-sys     0m0.107s
-$ time du -a > /dev/null
-
-real    0m0.194s
-user    0m0.007s
-sys     0m0.023s
-$ time du -a > /dev/null
-
-real    0m0.212s
-user    0m0.013s
-sys     0m0.020s
+$ time du -a >/dev/null
+real    0m8.952s
+user    0m0.180s
+sys     0m0.503s
+$ time du -a >/dev/null
+real    0m0.421s
+user    0m0.017s
+sys     0m0.070s
+$ time du -a >/dev/null
+real    0m0.421s
+user    0m0.030s
+sys     0m0.060s
 ```
 
 The first time trial above is slow as 9pfs builds a cache as it reads
@@ -30,21 +28,18 @@ directories. The second and third trials are subsequently much faster.
 Below is the time it takes for 9pfuse:
 
 ```
-$ time du -a > /dev/null
-
-real    0m10.959s
-user    0m0.017s
-sys     0m0.033s
-$ time du -a > /dev/null
-
-real    0m13.239s
-user    0m0.000s
-sys     0m0.050s
-$ time du -a > /dev/null
-
-real    0m13.082s
-user    0m0.007s
-sys     0m0.040s
+$ time du -a >/dev/null
+real    1m2.643s
+user    0m0.323s
+sys     0m0.833s
+$ time du -a >/dev/null
+real    1m15.849s
+user    0m0.287s
+sys     0m0.790s
+$ time du -a >/dev/null
+real    1m20.581s
+user    0m0.297s
+sys     0m0.753s
 ```
 
 Installation

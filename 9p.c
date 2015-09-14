@@ -406,19 +406,31 @@ _9pdirread(FFid *f, Dir **d)
 }
 
 int
-_9pread(FFid *f, void *buf, u32int n)
+_9pread(FFid *f, char *buf, u32int n)
 {
 	Fcall	tread, rread;
+	u32int	tot;
 
+	if(n == 0)
+		return 0;
 	tread.type = Tread;
 	tread.fid = f->fid;
-	tread.offset = f->offset;
-	tread.count = n < f->iounit ? n : f->iounit;
-	if(do9p(&tread, &rread) == -1)
-		return -1;
-	f->offset += rread.count;
-	memcpy(buf, rread.data, rread.count);
-	return rread.count;
+	tot = 0;
+	while(n > 0){
+		DPRINT("_9pread n is %d\n", n);
+		tread.offset = f->offset;
+		tread.count = n < f->iounit ? n : f->iounit;
+		if(do9p(&tread, &rread) == -1)
+			return -1;
+		memcpy(buf+tot, rread.data, rread.count);
+		f->offset += rread.count;
+		tot += rread.count;
+		if(rread.count < tread.count)
+			break;
+		n -= rread.count;
+	}
+	DPRINT("_9pread ending n is %d, tot is %d\n", n, tot);
+	return tot;
 }
 
 int
@@ -440,10 +452,10 @@ _9pwrite(FFid *f, char *buf, u32int n)
 		if(do9p(&twrite, &rwrite) == -1)
 			return -1;
 		f->offset += rwrite.count;
+		tot += rwrite.count;
 		if(rwrite.count < twrite.count)
 			break;
 		n -= rwrite.count;
-		tot += rwrite.count;
 	}
 	DPRINT("_9pwrite ending n is %d, tot is %d\n", n, tot);
 	return tot;

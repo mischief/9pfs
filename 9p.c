@@ -422,21 +422,31 @@ _9pread(FFid *f, void *buf, u32int n)
 }
 
 int
-_9pwrite(FFid *f, void *buf, u32int n)
+_9pwrite(FFid *f, char *buf, u32int n)
 {
 	Fcall	twrite, rwrite;
+	u32int	tot;
 
 	if(n == 0)
 		return 0;
 	twrite.type = Twrite;
 	twrite.fid = f->fid;
-	twrite.offset = f->offset;
-	twrite.count = n < f->iounit ? n : f->iounit;
-	twrite.data = buf;
-	if(do9p(&twrite, &rwrite) == -1)
-		return -1;
-	f->offset += rwrite.count;
-	return rwrite.count;
+	tot = 0;
+	while(n > 0){
+		DPRINT("_9pwrite n is %d\n", n);
+		twrite.offset = f->offset;
+		twrite.count = n < f->iounit ? n : f->iounit;
+		twrite.data = buf+tot;
+		if(do9p(&twrite, &rwrite) == -1)
+			return -1;
+		f->offset += rwrite.count;
+		if(rwrite.count < twrite.count)
+			break;
+		n -= rwrite.count;
+		tot += rwrite.count;
+	}
+	DPRINT("_9pwrite ending n is %d, tot is %d\n", n, tot);
+	return tot;
 }
 
 int

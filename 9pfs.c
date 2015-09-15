@@ -29,6 +29,7 @@
 
 enum
 {
+	CACHECTLSIZE = 8, /* sizeof("cleared\n") - 1 */
 	MSIZE = 8192
 };
 
@@ -43,7 +44,7 @@ void	usage(void);
 Dir	*rootdir;
 
 int
-stubstat(const char *path, struct stat *st)
+fsstat(const char *path, struct stat *st)
 {
 	FFid	*f;
 	Dir	*d;
@@ -69,7 +70,7 @@ fsgetattr(const char *path, struct stat *st)
 		st->st_mode = 0666 | S_IFREG;
 		st->st_uid = getuid();
 		st->st_gid = getgid();
-		st->st_size = sizeof("cleared\n") - 1;
+		st->st_size = CACHECTLSIZE;
 		return 0;
 	}
 	if((d = iscached(path)) == NULL)
@@ -77,7 +78,7 @@ fsgetattr(const char *path, struct stat *st)
 	if(d == NULL)
 		return -ENOENT;
 	if(strcmp(d->uid, "stub") == 0) /* hack for aux/stub */
-		return stubstat(path, st);
+		return fsstat(path, st);
 	dir2stat(st, d);
 	return 0;
 }
@@ -250,7 +251,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 	int 	r;
 
 	if(iscachectl(path)){
-		size = sizeof("cleared\n") - 1;
+		size = CACHECTLSIZE;
 		if(off >= size)
 			return 0;
 		memcpy(buf, "cleared\n" + off, size - off);
@@ -602,6 +603,6 @@ breakpath(char *dname)
 void
 usage(void)
 {
-	fprintf(stderr, "usage: 9pfs [-anU] [-p port] [-u user] host mtpt\n");
+	fprintf(stderr, "Usage: 9pfs [-anU] [-p port] [-u user] service mtpt\n");
 	exit(2);
 }

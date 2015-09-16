@@ -395,7 +395,7 @@ fschmod(const char *path, mode_t perm)
 		_9pclunk(f);
 		return -EIO;
 	}
-	d->mode = perm;
+	d->mode = perm & 0777;
 	if(_9pwstat(f, d) == -1){
 		_9pclunk(f);
 		free(d);

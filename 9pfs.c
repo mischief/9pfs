@@ -403,6 +403,7 @@ fschmod(const char *path, mode_t perm)
 	}
 	_9pclunk(f);
 	free(d);
+	clearcache(path);
 	return 0;
 }
 

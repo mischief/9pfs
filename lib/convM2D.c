@@ -6,7 +6,7 @@
 #include "../fcall.h"
 
 int
-statchecku(uchar *buf, uint nbuf, int dotu)
+statcheck(uchar *buf, uint nbuf)
 {
 	uchar *ebuf;
 	int i, nstr;
@@ -19,16 +19,11 @@ statchecku(uchar *buf, uint nbuf, int dotu)
 	buf += STATFIXLEN - 4 * BIT16SZ;
 
 	nstr = 4;
-	if(dotu)
-		nstr = 5;
 	for(i = 0; i < nstr; i++){
 		if(buf + BIT16SZ > ebuf)
 			return -1;
 		buf += BIT16SZ + GBIT16(buf);
 	}
-
-	if(dotu)
-		buf += 3*BIT32SZ;
 
 	if(buf != ebuf)
 		return -1;
@@ -36,16 +31,10 @@ statchecku(uchar *buf, uint nbuf, int dotu)
 	return 0;
 }
 
-int
-statcheck(uchar *buf, uint nbuf)
-{
-	return statchecku(buf, nbuf, 0);
-}
-
 static char nullstring[] = "";
 
 uint
-convM2Du(uchar *buf, uint nbuf, Dir *d, char *strs, int dotu)
+convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 {
 	uchar *p, *ebuf;
 	char *sv[5];
@@ -78,8 +67,6 @@ convM2Du(uchar *buf, uint nbuf, Dir *d, char *strs, int dotu)
 	p += BIT64SZ;
 
 	nstr = 4;
-	if(dotu)
-		nstr = 5;
 	for(i = 0; i < nstr; i++){
 		if(p + BIT16SZ > ebuf)
 			return 0;
@@ -95,39 +82,18 @@ convM2Du(uchar *buf, uint nbuf, Dir *d, char *strs, int dotu)
 		}
 		p += ns;
 	}
-
-	if(dotu){
-		if(p + BIT32SZ*3 > ebuf)
-			return 0;
-		d->uidnum = GBIT32(p);
-		p += BIT32SZ;
-		d->gidnum = GBIT32(p);
-		p += BIT32SZ;
-		d->muidnum = GBIT32(p);
-		p += BIT32SZ;
-	}
 	
 	if(strs){
 		d->name = sv[0];
 		d->uid = sv[1];
 		d->gid = sv[2];
 		d->muid = sv[3];
-		d->ext = nullstring;
-		if(dotu)
-			d->ext = sv[4];
 	}else{
 		d->name = nullstring;
 		d->uid = nullstring;
 		d->gid = nullstring;
 		d->muid = nullstring;
-		d->ext = nullstring;
 	}
 	
 	return p - buf;
-}
-
-uint
-convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
-{
-	return convM2Du(buf, nbuf, d, strs, 0);
 }

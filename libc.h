@@ -84,12 +84,6 @@ struct Dir {
 	char	*uid;	/* owner name */
 	char	*gid;	/* group name */
 	char	*muid;	/* last modifier name */
-	
-	/* 9P2000.u extensions */
-	uint	uidnum;		/* numeric uid */
-	uint	gidnum;		/* numeric gid */
-	uint	muidnum;	/* numeric muid */
-	char	*ext;		/* extended info */
 } Dir;
 
 char	*strecpy(char*, char*, char*);

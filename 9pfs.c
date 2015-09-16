@@ -234,11 +234,11 @@ fsunlink(const char *path)
 	FFid	*f;
 
 	if(iscachectl(path))
-		return -EACCES;
+		return 0;
 	if((f = _9pwalk(path)) == NULL)
 		return -ENOENT;
 	if(_9premove(f) == -1)
-		return -EIO;
+		return -EACCES;
 	clearcache(path);
 	return 0;
 }
@@ -383,6 +383,29 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 	return 0;
 }
 
+int
+fschmod(const char *path, mode_t perm)
+{
+	FFid	*f;
+	Dir	*d;
+
+	if((f = _9pwalk(path)) == NULL)
+		return -ENOENT;
+	if((d = _9pstat(f)) == NULL){
+		_9pclunk(f);
+		return -EIO;
+	}
+	d->mode = perm;
+	if(_9pwstat(f, d) == -1){
+		_9pclunk(f);
+		free(d);
+		return -EACCES;
+	}
+	_9pclunk(f);
+	free(d);
+	return 0;
+}
+
 struct fuse_operations fsops = {
 	.getattr =	fsgetattr,
 	.truncate =	fstruncate,
@@ -397,7 +420,8 @@ struct fuse_operations fsops = {
 	.rmdir =	fsrmdir,
 	.readdir = 	fsreaddir,
 	.release =	fsrelease,
-	.releasedir =	fsreleasedir
+	.releasedir =	fsreleasedir,
+	.chmod =	fschmod
 };
 
 int

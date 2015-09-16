@@ -10,13 +10,13 @@
 .Op Fl anU
 .Op Fl p Ar port
 .Op Fl u Ar user
-.Ar host
+.Ar service
 .Ar mtpt
 .Ek
 .Sh DESCRIPTION
 .Nm 9pfs
 mounts the 9P service running at
-.Ar host
+.Ar service
 onto
 .Ar mtpt
 using the FUSE user-level file system driver.
@@ -33,7 +33,7 @@ for more details.
 Do not negotiate authentication. This is the
 default.
 .It Fl U
-Connect to a UNIX-domain
+The 9P service is a UNIX-domain
 socket.
 .It Fl p Ar port
 Specifies the connection port for the 9P service.

@@ -466,7 +466,7 @@ _9pclunk(FFid *f)
 {
 	Fcall	tclunk, rclunk;
 
-	if(f == NULL)
+	if(f == NULL || f == rootfid)
 		return 0;
 	tclunk.type = Tclunk;
 	tclunk.fid = f->fid;
@@ -511,7 +511,7 @@ lookupfid(u32int fid, int act)
 		break;
 	case DEL:
 		if(*floc == NULL || *floc == rootfid)
-			return NULL;
+			return FDEL;
 		f = *floc;
 		*floc = f->link;
 		free(f->path);

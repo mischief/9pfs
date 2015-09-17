@@ -94,9 +94,9 @@ fsreleasedir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	if((FFid*)ffi->fh == NULL)
-		return 0;
 	f = (FFid*)ffi->fh;
+	if(f == NULL || f == rootfid)
+		return 0;
 	if((f->qid.type & QTDIR) == 0)
 		return -ENOTDIR;
 	return _9pclunk(f);

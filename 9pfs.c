@@ -433,18 +433,19 @@ main(int argc, char *argv[])
 	struct sockaddr		*addr;
 	struct addrinfo		*ainfo;
 	struct passwd		*pw;
-	char			logstr[100], *fusearg[6], **fargp, port[10], user[30];
+	char			logstr[100], *fusearg[6], **fargp, port[10], user[30], *aname;
 	int			ch, doauth, uflag, n, alen, e;
 
 	fargp = fusearg;
 	*fargp++ = *argv;
+	aname = NULL;
 	doauth = 0;
 	uflag = 0;
 	strecpy(port, port+sizeof(port), "564");
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
 	strecpy(user, user+sizeof(user), pw->pw_name);
-	while((ch = getopt(argc, argv, ":dnUap:u:")) != -1){
+	while((ch = getopt(argc, argv, ":dnUap:u:A:")) != -1){
 		switch(ch){
 		case 'd':
 			debug++;
@@ -463,6 +464,9 @@ main(int argc, char *argv[])
 			break;
 		case 'u':
 			strecpy(user, user+sizeof(user), optarg);
+			break;
+		case 'A':
+			aname = strdup(optarg);
 			break;
 		default:
 			usage();
@@ -509,7 +513,7 @@ main(int argc, char *argv[])
 			err(1, "Could not establish authentication");
 		auth_freeAI(ai);
 	}
-	rootfid = _9pattach(ROOTFID, doauth ? AUTHFID : NOFID, user, NULL);
+	rootfid = _9pattach(ROOTFID, doauth ? AUTHFID : NOFID, user, aname);
 	if((rootdir = _9pstat(rootfid)) == NULL)
 		errx(1, "Could not stat root");
 	DPRINT("About to fuse_main\n");
@@ -628,6 +632,6 @@ breakpath(char *dname)
 void
 usage(void)
 {
-	fprintf(stderr, "Usage: 9pfs [-anU] [-p port] [-u user] service mtpt\n");
+	fprintf(stderr, "Usage: 9pfs [-anU] [-A aname] [-p port] [-u user] service mtpt\n");
 	exit(2);
 }

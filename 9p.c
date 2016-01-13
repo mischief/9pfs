@@ -74,7 +74,10 @@ do9p(Fcall *t, Fcall *r)
 {
 	int	n;
 
-	t->tag = random();
+	if(t->type == Tversion)
+		t->tag = (ushort)~0;
+	else
+		t->tag = random();
 	if((n = convS2M(t, tbuf, msize)) == 0){
 		r->ename = "Bad S2M conversion";
 		goto err;

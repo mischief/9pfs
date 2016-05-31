@@ -38,6 +38,13 @@ install:	${TARG} ${TARG}.1
 installman:	${TARG}.1
 	install -m 444 -g bin ${TARG}.1 ${MAN}
 
+uninstall:
+	rm -f ${BIN}/${TARG}
+	rm -f ${MAN}/${TARG}.1
+
+uninstallman:
+	rm -f ${MAN}/${TARG}.1
+
 ${TARG}:	${OBJS} ${HFILES}
 	${CC} ${LDFLAGS} -o $@ ${OBJS} ${LDADD}
 

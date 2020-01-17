@@ -433,7 +433,7 @@ main(int argc, char *argv[])
 	struct sockaddr		*addr;
 	struct addrinfo		*ainfo;
 	struct passwd		*pw;
-	char			logstr[100], *fusearg[6], **fargp, port[10], user[30], *aname;
+	char			logstr[100], *fusearg[argc], **fargp, port[10], user[30], *aname;
 	int			ch, doauth, uflag, n, alen, e;
 
 	fargp = fusearg;
@@ -445,7 +445,7 @@ main(int argc, char *argv[])
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
 	strecpy(user, user+sizeof(user), pw->pw_name);
-	while((ch = getopt(argc, argv, ":dnUap:u:A:")) != -1){
+	while((ch = getopt(argc, argv, ":dnUap:u:A:o:f")) != -1){
 		switch(ch){
 		case 'd':
 			debug++;
@@ -459,6 +459,9 @@ main(int argc, char *argv[])
 		case 'a':
 			doauth++;
 			break;
+		case 'f':
+			*fargp++ = "-f";
+			break;
 		case 'p':
 			strecpy(port, port+sizeof(port), optarg);
 			break;
@@ -467,6 +470,10 @@ main(int argc, char *argv[])
 			break;
 		case 'A':
 			aname = strdup(optarg);
+			break;
+                case 'o':
+			*fargp++ = "-o";
+			*fargp++ = optarg;
 			break;
 		default:
 			usage();
@@ -632,6 +639,6 @@ breakpath(char *dname)
 void
 usage(void)
 {
-	fprintf(stderr, "Usage: 9pfs [-anU] [-A aname] [-p port] [-u user] service mtpt\n");
+	fprintf(stderr, "Usage: 9pfs [-anUfd] [-A aname] [-p port] [-u user] [-o option] service mtpt\n");
 	exit(2);
 }

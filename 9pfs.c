@@ -229,6 +229,30 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 }
 
 int
+fsmknod(const char *path, mode_t perm, dev_t dev)
+{
+	FFid	*f;
+	char	*dname, *bname;
+	if(iscachectl(path))
+		return -EACCES;
+	if((f = _9pwalk(path)) == NULL){
+		dname = estrdup(path);
+		bname = breakpath(dname);
+		if((f = _9pwalk(dname)) == NULL){
+			free(dname);
+			return -ENOENT;
+		}
+		f = _9pcreate(f, bname, perm, 0);
+		free(dname);
+		if(f == NULL)
+			return -EACCES;
+	}
+	_9pclunk(f);
+	clearcache(path);
+	return 0;
+}
+
+int
 fsunlink(const char *path)
 {
 	FFid	*f;
@@ -413,6 +437,7 @@ struct fuse_operations fsops = {
 	.rename =	fsrename,
 	.open =		fsopen,
 	.create =	fscreate,
+        .mknod = fsmknod,
 	.unlink =	fsunlink,
 	.read =		fsread,
 	.write =	fswrite,

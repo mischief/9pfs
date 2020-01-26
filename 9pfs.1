@@ -44,6 +44,14 @@ The default is 564.
 .It Fl u Ar user
 Specifies the username to use on authentication
 and attach to the 9P service.
+.It Fl d
+Causes debug information for subsequent FUSE library calls to be
+output to stderr.	Implies -f.
+.It Fl f
+This flag indicates that the file system should not detach from the
+controlling terminal and run in the foreground.
+.It Fl o Ar option
+Passes additional option to fuse_mount(3).
 .El
 .Pp
 9pfs caches directories it reads which will cause

@@ -61,6 +61,10 @@ typedef unsigned char uchar;
 typedef unsigned long long uvlong;
 typedef long long vlong;
 
+#ifndef __GLIBC__
+typedef unsigned long ulong;
+#endif
+
 typedef
 struct Qid
 {

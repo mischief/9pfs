@@ -30,7 +30,7 @@
 enum
 {
 	CACHECTLSIZE = 8, /* sizeof("cleared\n") - 1 */
-	MSIZE = 8192
+	MSIZE_9P = 8192
 };
 
 void	dir2stat(struct stat*, Dir*);
@@ -505,7 +505,7 @@ main(int argc, char *argv[])
 		freeaddrinfo(ainfo);
 
 	init9p();
-	msize = _9pversion(MSIZE);
+	msize = _9pversion(MSIZE_9P);
 	if(doauth){
 		authfid = _9pauth(AUTHFID, user, NULL);
 		ai = auth_proxy(authfid, auth_getkey, "proto=p9any role=client");

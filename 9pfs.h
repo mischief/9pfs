@@ -32,13 +32,13 @@ struct FDir
 	long	ndirs;
 };
 
-FILE	*logfile;
+extern FILE	*logfile;
 
-FFid	*rootfid;
-FFid	*authfid;
-int	msize;
-int	srvfd;
-int	debug;
+extern FFid	*rootfid;
+extern FFid	*authfid;
+extern int	msize;
+extern int	srvfd;
+extern int	debug;
 
 void	init9p();
 int	_9pversion(u32int);

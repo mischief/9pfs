@@ -42,6 +42,12 @@ char	*breakpath(char*);
 void	usage(void);
 
 Dir	*rootdir;
+FILE	*logfile;
+FFid	*rootfid;
+FFid	*authfid;
+int	msize;
+int	srvfd;
+int	debug;
 
 int
 fsstat(const char *path, struct stat *st)

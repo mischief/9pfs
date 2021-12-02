@@ -322,9 +322,8 @@ int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	FDir	*d;
 
-	if((d = lookupdir(path, GET)) != NULL){
+	if(lookupdir(path, GET) != NULL){
 		ffi->fh = (u64int)NULL;
 		return 0;
 	}
@@ -622,7 +621,6 @@ addtocache(const char *path)
 	FFid	*f;
 	Dir	*d;
 	char	*dname;
-	long	n;
 
 	DPRINT("addtocache %s\n", path);
 	dname = estrdup(path);
@@ -637,7 +635,7 @@ addtocache(const char *path)
 		return NULL;
 	}
 	DPRINT("addtocache about to dirread\n");
-	if((n = _9pdirread(f, &d)) < 0){
+	if(_9pdirread(f, &d) < 0){
 		free(dname);
 		return NULL;
 	}

@@ -156,11 +156,13 @@ fsrename(const char *opath, const char *npath)
 	dname = estrdup(npath);
 	bname = strrchr(dname, '/');
 	if(strncmp(opath, npath, bname-dname) != 0){
+		_9pclunk(f);
 		free(dname);
 		return -EACCES;
 	}
 	*bname++ = '\0';
 	if((d = _9pstat(f)) == NULL){
+		_9pclunk(f);
 		free(dname);
 		return -EIO;
 	}
@@ -631,14 +633,17 @@ addtocache(const char *path)
 	}
 	f->mode |= O_RDONLY;
 	if(_9popen(f) == -1){
+		_9pclunk(f);
 		free(dname);
 		return NULL;
 	}
 	DPRINT("addtocache about to dirread\n");
 	if(_9pdirread(f, &d) < 0){
+		_9pclunk(f);
 		free(dname);
 		return NULL;
 	}
+	_9pclunk(f);
 	free(dname);
 	return iscached(path);
 }

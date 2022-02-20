@@ -197,6 +197,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		return -EACCES;
 	}
 	ffi->fh = (u64int)f;
+	ffi->direct_io = 1;
 	return 0;
 }
 

@@ -17,7 +17,7 @@ struct	Fcall
 	u32int	afid;		/* Tauth, Tattach */
 	char	*uname;		/* Tauth, Tattach */
 	char	*aname;		/* Tauth, Tattach */
-	u32int	perm;		/* Tcreate */ 
+	u32int	perm;		/* Tcreate */
 	char	*name;		/* Tcreate */
 	uchar	mode;		/* Tcreate, Topen */
 	u32int	newfid;		/* Twalk */
@@ -31,7 +31,7 @@ struct	Fcall
 	ushort	nstat;		/* Twstat, Rstat */
 	uchar	*stat;		/* Twstat, Rstat */
 	int	unixfd;		/* Ropenfd */
-	
+
 	/* 9P2000.u extensions */
 	int	errornum;	/* Rerror */
 	int	uidnum;		/* Tattach, Tauth */

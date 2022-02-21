@@ -178,8 +178,8 @@ fsrename(const char *opath, const char *npath)
 	free(d);
 	clearcache(opath);
 	return 0;
-}	
-	
+}
+
 int
 fsopen(const char *path, struct fuse_file_info *ffi)
 {
@@ -559,7 +559,7 @@ main(int argc, char *argv[])
 	DPRINT("About to fuse_main\n");
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
-}	
+}
 
 void
 dir2stat(struct stat *s, Dir *d)
@@ -583,7 +583,7 @@ dir2stat(struct stat *s, Dir *d)
 	s->st_atime = d->atime;
 	s->st_mtime = s->st_ctime = d->mtime;
 	s->st_rdev = 0;
-}	
+}
 
 void
 clearcache(const char *path)
@@ -648,7 +648,7 @@ addtocache(const char *path)
 	free(dname);
 	return iscached(path);
 }
-	
+
 int
 iscachectl(const char *path)
 {

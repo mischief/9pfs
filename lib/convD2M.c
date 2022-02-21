@@ -8,31 +8,27 @@
 uint
 sizeD2M(Dir *d)
 {
-	char *sv[5];
-	int i, ns, nstr, fixlen;
+	char *sv[4];
+	int i, ns;
 
 	sv[0] = d->name;
 	sv[1] = d->uid;
 	sv[2] = d->gid;
 	sv[3] = d->muid;
-	
-	fixlen = STATFIXLEN;
-	nstr = 4;
-	
-	ns = 0;
-	for(i = 0; i < nstr; i++)
-		if(sv[i])
-			ns += strlen(sv[i]);
 
-	return fixlen + ns;
+	ns = 0;
+	for(i = 0; i < nelem(sv); i++)
+		ns += sv[i] ? strlen(sv[i]) : 0;
+
+	return STATFIXLEN + ns;
 }
 
 uint
 convD2M(Dir *d, uchar *buf, uint nbuf)
 {
 	uchar *p, *ebuf;
-	char *sv[5];
-	int i, ns, nsv[5], ss, nstr, fixlen;
+	char *sv[4];
+	int i, ns, nsv[4], ss;
 
 	if(nbuf < BIT16SZ)
 		return 0;
@@ -45,19 +41,13 @@ convD2M(Dir *d, uchar *buf, uint nbuf)
 	sv[2] = d->gid;
 	sv[3] = d->muid;
 
-	fixlen = STATFIXLEN;
-	nstr = 4;
-	
 	ns = 0;
-	for(i = 0; i < nstr; i++){
-		if(sv[i])
-			nsv[i] = strlen(sv[i]);
-		else
-			nsv[i] = 0;
+	for(i = 0; i < nelem(nsv); i++){
+		nsv[i] = sv[i] ? strlen(sv[i]) : 0;
 		ns += nsv[i];
 	}
 
-	ss = fixlen + ns;
+	ss = STATFIXLEN + ns;
 
 	/* set size befor erroring, so user can know how much is needed */
 	/* note that length excludes count field itself */
@@ -86,7 +76,7 @@ convD2M(Dir *d, uchar *buf, uint nbuf)
 	PBIT64(p, d->length);
 	p += BIT64SZ;
 
-	for(i = 0; i < nstr; i++){
+	for(i = 0; i < nelem(nsv); i++){
 		ns = nsv[i];
 		if(p + ns + BIT16SZ > ebuf)
 			return 0;

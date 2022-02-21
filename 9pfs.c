@@ -287,7 +287,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 		size = CACHECTLSIZE;
 		if(off >= size)
 			return 0;
-		memcpy(buf, "cleared\n" + off, size - off);
+		memcpy(buf, &"cleared\n"[off], size - off);
 		clearcache(path);
 		return size;
 	}

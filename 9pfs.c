@@ -26,6 +26,7 @@
 #include "util.h"
 
 #define CACHECTL ".fscache"
+#define FFIH(ffi) ((FFid*)(uintptr_t)(ffi)->fh)
 
 enum
 {
@@ -92,7 +93,7 @@ fsgetattr(const char *path, struct stat *st)
 int
 fsrelease(const char *path, struct fuse_file_info *ffi)
 {
-	return _9pclunk((FFid*)ffi->fh);
+	return _9pclunk(FFIH(ffi));
 }
 
 int
@@ -100,9 +101,9 @@ fsreleasedir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	if((FFid*)ffi->fh == NULL)
+	f = FFIH(ffi);
+	if(f == NULL)
 		return 0;
-	f = (FFid*)ffi->fh;
 	if((f->qid.type & QTDIR) == 0)
 		return -ENOTDIR;
 	return _9pclunk(f);
@@ -196,7 +197,7 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		_9pclunk(f);
 		return -EACCES;
 	}
-	ffi->fh = (u64int)f;
+	ffi->fh = (uintptr_t)f;
 	ffi->direct_io = 1;
 	return 0;
 }
@@ -232,7 +233,7 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 			return -EIO;
 		}
 	}
-	ffi->fh = (u64int)f;
+	ffi->fh = (uintptr_t)f;
 	clearcache(path);
 	return 0;
 }
@@ -291,7 +292,7 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 		clearcache(path);
 		return size;
 	}
-	f = (FFid*)ffi->fh;
+	f = FFIH(ffi);
 	if(f->mode & O_WRONLY)
 		return -EACCES;
 	f->offset = off;
@@ -311,7 +312,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 		clearcache(path);
 		return size;
 	}
-	f = (FFid*)ffi->fh;
+	f = FFIH(ffi);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
@@ -327,7 +328,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 	FFid	*f;
 
 	if(lookupdir(path, GET) != NULL){
-		ffi->fh = (u64int)NULL;
+		ffi->fh = (uintptr_t)0;
 		return 0;
 	}
 	if((f = _9pwalk(path)) == NULL)
@@ -341,7 +342,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 		_9pclunk(f);
 		return -ENOTDIR;
 	}
-	ffi->fh = (u64int)f;
+	ffi->fh = (uintptr_t)f;
 	return 0;
 }
 
@@ -404,7 +405,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 		d = f->dirs;
 		n = f->ndirs;
 	}else{
-		if((n = _9pdirread((FFid*)ffi->fh, &d)) < 0)
+		if((n = _9pdirread(FFIH(ffi), &d)) < 0)
 			return -EIO;
 	}
 	for(e = d; e < d+n; e++){

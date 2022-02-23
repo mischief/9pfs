@@ -65,7 +65,7 @@ typedef
 struct Qid
 {
 	uvlong	path;
-	ulong	vers;
+	u32int	vers;
 	uchar	type;
 } Qid;
 
@@ -76,9 +76,9 @@ struct Dir {
 	uint	dev;	/* server subtype */
 	/* file data */
 	Qid	qid;	/* unique id from server */
-	ulong	mode;	/* permissions */
-	ulong	atime;	/* last read time */
-	ulong	mtime;	/* last write time */
+	u32int	mode;	/* permissions */
+	u32int	atime;	/* last read time */
+	u32int	mtime;	/* last write time */
 	vlong	length;	/* file length */
 	char	*name;	/* last element of path */
 	char	*uid;	/* owner name */

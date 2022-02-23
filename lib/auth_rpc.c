@@ -79,7 +79,7 @@ auth_rpc(AuthRpc *rpc, char *verb, void *a, int na)
 	memmove(rpc->obuf, verb, l);
 	rpc->obuf[l] = ' ';
 	memmove(rpc->obuf+l+1, a, na);
-	if((n=write(rpc->afd, rpc->obuf, l+1+na)) != l+1+na)
+	if(write(rpc->afd, rpc->obuf, l+1+na) != l+1+na)
 		return ARrpcfailure;
 
 	if((n=read(rpc->afd, rpc->ibuf, AuthRpcMax)) < 0)

@@ -41,7 +41,7 @@ convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 	int i, ns, nstr;
 
 	if(nbuf < STATFIXLEN)
-		return 0; 
+		return 0;
 
 	p = buf;
 	ebuf = buf + nbuf;
@@ -82,7 +82,7 @@ convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 		}
 		p += ns;
 	}
-	
+
 	if(strs){
 		d->name = sv[0];
 		d->uid = sv[1];
@@ -94,6 +94,6 @@ convM2D(uchar *buf, uint nbuf, Dir *d, char *strs)
 		d->gid = nullstring;
 		d->muid = nullstring;
 	}
-	
+
 	return p - buf;
 }

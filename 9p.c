@@ -18,34 +18,34 @@
 #include "util.h"
 
 char *calls2str[] = {
-  [Tversion]	"Tversion",
-  [Tauth]	"Tauth",
-  [Tattach]	"Tattach",
-  [Terror]	"Terror",
-  [Tflush]	"Tflush",
-  [Twalk]	"Twalk",
-  [Topen]	"Topen",
-  [Tcreate]	"Tcreate",
-  [Tread]	"Tread",
-  [Twrite]	"Twrite",
-  [Tclunk]	"Tclunk",
-  [Tremove]	"Tremove",
-  [Tstat]	"Tstat",
-  [Twstat]	"Twstat",
-  [Rversion]	"Rversion",
-  [Rauth]	"Rauth",
-  [Rattach]	"Rattach",
-  [Rerror]	"Rerror",
-  [Rflush]	"Rflush",
-  [Rwalk]	"Rwalk",
-  [Ropen]	"Ropen",
-  [Rcreate]	"Rcreate",
-  [Rread]	"Rread",
-  [Rwrite]	"Rwrite",
-  [Rclunk]	"Rclunk",
-  [Rremove]	"Rremove",
-  [Rstat]	"Rstat",
-  [Rwstat]	"Rwstat"
+  [Tversion]=	"Tversion",
+  [Tauth]=	"Tauth",
+  [Tattach]=	"Tattach",
+  [Terror]=	"Terror",
+  [Tflush]=	"Tflush",
+  [Twalk]=	"Twalk",
+  [Topen]=	"Topen",
+  [Tcreate]=	"Tcreate",
+  [Tread]=	"Tread",
+  [Twrite]=	"Twrite",
+  [Tclunk]=	"Tclunk",
+  [Tremove]=	"Tremove",
+  [Tstat]=	"Tstat",
+  [Twstat]=	"Twstat",
+  [Rversion]=	"Rversion",
+  [Rauth]=	"Rauth",
+  [Rattach]=	"Rattach",
+  [Rerror]=	"Rerror",
+  [Rflush]=	"Rflush",
+  [Rwalk]=	"Rwalk",
+  [Ropen]=	"Ropen",
+  [Rcreate]=	"Rcreate",
+  [Rread]=	"Rread",
+  [Rwrite]=	"Rwrite",
+  [Rclunk]=	"Rclunk",
+  [Rremove]=	"Rremove",
+  [Rstat]=	"Rstat",
+  [Rwstat]=	"Rwstat"
 };
 
 void	*tbuf, *rbuf;
@@ -105,7 +105,7 @@ err:
 	r->type = Rerror;
 	return -1;
 }
-	
+
 int
 _9pversion(u32int m)
 {
@@ -165,7 +165,7 @@ _9pattach(u32int fid, u32int afid, char* uname, char *aname)
 	f->fid = fid;
 	f->qid = rattach.qid;
 	return f;
-}	
+}
 
 FFid*
 _9pwalkr(FFid *r, char *path)
@@ -262,7 +262,7 @@ int
 _9popen(FFid *f)
 {
 	Fcall	topen, ropen;
-	
+
 	topen.type = Topen;
 	topen.fid = f->fid;
 	topen.mode = f->mode;
@@ -489,7 +489,7 @@ uniqfid(void)
 	while((f = lookupfid(fid, PUT)) == NULL);
 	return f;
 }
-	
+
 
 FFid*
 lookupfid(u32int fid, int act)
@@ -522,7 +522,7 @@ lookupfid(u32int fid, int act)
 		f = FDEL;
 		break;
 	}
-	return f;			
+	return f;
 }
 
 FFid*

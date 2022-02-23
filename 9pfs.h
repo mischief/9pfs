@@ -32,15 +32,15 @@ struct FDir
 	long	ndirs;
 };
 
-FILE	*logfile;
+extern FILE	*logfile;
 
-FFid	*rootfid;
-FFid	*authfid;
-int	msize;
-int	srvfd;
-int	debug;
+extern FFid	*rootfid;
+extern FFid	*authfid;
+extern int	msize;
+extern int	srvfd;
+extern int	debug;
 
-void	init9p();
+void	init9p(void);
 int	_9pversion(u32int);
 FFid	*_9pauth(u32int, char*, char*);
 FFid	*_9pattach(u32int, u32int, char*, char*);

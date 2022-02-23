@@ -26,11 +26,12 @@
 #include "util.h"
 
 #define CACHECTL ".fscache"
+#define FFIH(ffi) ((FFid*)(uintptr_t)(ffi)->fh)
 
 enum
 {
 	CACHECTLSIZE = 8, /* sizeof("cleared\n") - 1 */
-	MSIZE = 8192
+	Msize = 32768,
 };
 
 void	dir2stat(struct stat*, Dir*);
@@ -42,6 +43,12 @@ char	*breakpath(char*);
 void	usage(void);
 
 Dir	*rootdir;
+FILE	*logfile;
+FFid	*rootfid;
+FFid	*authfid;
+int	msize;
+int	srvfd;
+int	debug;
 
 int
 fsstat(const char *path, struct stat *st)
@@ -86,7 +93,7 @@ fsgetattr(const char *path, struct stat *st)
 int
 fsrelease(const char *path, struct fuse_file_info *ffi)
 {
-	return _9pclunk((FFid*)ffi->fh);
+	return _9pclunk(FFIH(ffi));
 }
 
 int
@@ -94,9 +101,9 @@ fsreleasedir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
 
-	if((FFid*)ffi->fh == NULL)
+	f = FFIH(ffi);
+	if(f == NULL)
 		return 0;
-	f = (FFid*)ffi->fh;
 	if((f->qid.type & QTDIR) == 0)
 		return -ENOTDIR;
 	return _9pclunk(f);
@@ -150,11 +157,13 @@ fsrename(const char *opath, const char *npath)
 	dname = estrdup(npath);
 	bname = strrchr(dname, '/');
 	if(strncmp(opath, npath, bname-dname) != 0){
+		_9pclunk(f);
 		free(dname);
 		return -EACCES;
 	}
 	*bname++ = '\0';
 	if((d = _9pstat(f)) == NULL){
+		_9pclunk(f);
 		free(dname);
 		return -EIO;
 	}
@@ -170,8 +179,8 @@ fsrename(const char *opath, const char *npath)
 	free(d);
 	clearcache(opath);
 	return 0;
-}	
-	
+}
+
 int
 fsopen(const char *path, struct fuse_file_info *ffi)
 {
@@ -188,7 +197,8 @@ fsopen(const char *path, struct fuse_file_info *ffi)
 		_9pclunk(f);
 		return -EACCES;
 	}
-	ffi->fh = (u64int)f;
+	ffi->fh = (uintptr_t)f;
+	ffi->direct_io = 1;
 	return 0;
 }
 
@@ -223,7 +233,31 @@ fscreate(const char *path, mode_t perm, struct fuse_file_info *ffi)
 			return -EIO;
 		}
 	}
-	ffi->fh = (u64int)f;
+	ffi->fh = (uintptr_t)f;
+	clearcache(path);
+	return 0;
+}
+
+int
+fsmknod(const char *path, mode_t perm, dev_t dev)
+{
+	FFid	*f;
+	char	*dname, *bname;
+	if(iscachectl(path))
+		return -EACCES;
+	if((f = _9pwalk(path)) == NULL){
+		dname = estrdup(path);
+		bname = breakpath(dname);
+		if((f = _9pwalk(dname)) == NULL){
+			free(dname);
+			return -ENOENT;
+		}
+		f = _9pcreate(f, bname, perm, 0);
+		free(dname);
+		if(f == NULL)
+			return -EACCES;
+	}
+	_9pclunk(f);
 	clearcache(path);
 	return 0;
 }
@@ -254,11 +288,11 @@ fsread(const char *path, char *buf, size_t size, off_t off,
 		size = CACHECTLSIZE;
 		if(off >= size)
 			return 0;
-		memcpy(buf, "cleared\n" + off, size - off);
+		memcpy(buf, &"cleared\n"[off], size - off);
 		clearcache(path);
 		return size;
 	}
-	f = (FFid*)ffi->fh;
+	f = FFIH(ffi);
 	if(f->mode & O_WRONLY)
 		return -EACCES;
 	f->offset = off;
@@ -278,7 +312,7 @@ fswrite(const char *path, const char *buf, size_t size, off_t off,
 		clearcache(path);
 		return size;
 	}
-	f = (FFid*)ffi->fh;
+	f = FFIH(ffi);
 	if(f->mode & O_RDONLY)
 		return -EACCES;
 	f->offset = off;
@@ -292,10 +326,9 @@ int
 fsopendir(const char *path, struct fuse_file_info *ffi)
 {
 	FFid	*f;
-	FDir	*d;
 
-	if((d = lookupdir(path, GET)) != NULL){
-		ffi->fh = (u64int)NULL;
+	if(lookupdir(path, GET) != NULL){
+		ffi->fh = (uintptr_t)0;
 		return 0;
 	}
 	if((f = _9pwalk(path)) == NULL)
@@ -309,7 +342,7 @@ fsopendir(const char *path, struct fuse_file_info *ffi)
 		_9pclunk(f);
 		return -ENOTDIR;
 	}
-	ffi->fh = (u64int)f;
+	ffi->fh = (uintptr_t)f;
 	return 0;
 }
 
@@ -372,7 +405,7 @@ fsreaddir(const char *path, void *data, fuse_fill_dir_t ffd,
 		d = f->dirs;
 		n = f->ndirs;
 	}else{
-		if((n = _9pdirread((FFid*)ffi->fh, &d)) < 0)
+		if((n = _9pdirread(FFIH(ffi), &d)) < 0)
 			return -EIO;
 	}
 	for(e = d; e < d+n; e++){
@@ -413,6 +446,7 @@ struct fuse_operations fsops = {
 	.rename =	fsrename,
 	.open =		fsopen,
 	.create =	fscreate,
+        .mknod = fsmknod,
 	.unlink =	fsunlink,
 	.read =		fsread,
 	.write =	fswrite,
@@ -433,7 +467,7 @@ main(int argc, char *argv[])
 	struct sockaddr		*addr;
 	struct addrinfo		*ainfo;
 	struct passwd		*pw;
-	char			logstr[100], *fusearg[6], **fargp, port[10], user[30], *aname;
+	char			logstr[100], *fusearg[argc], **fargp, port[10], user[30], *aname;
 	int			ch, doauth, uflag, n, alen, e;
 
 	fargp = fusearg;
@@ -445,7 +479,7 @@ main(int argc, char *argv[])
 	if((pw = getpwuid(getuid())) == NULL)
 		errx(1, "Could not get user");
 	strecpy(user, user+sizeof(user), pw->pw_name);
-	while((ch = getopt(argc, argv, ":dnUap:u:A:")) != -1){
+	while((ch = getopt(argc, argv, ":dnUap:u:A:o:f")) != -1){
 		switch(ch){
 		case 'd':
 			debug++;
@@ -459,6 +493,9 @@ main(int argc, char *argv[])
 		case 'a':
 			doauth++;
 			break;
+		case 'f':
+			*fargp++ = "-f";
+			break;
 		case 'p':
 			strecpy(port, port+sizeof(port), optarg);
 			break;
@@ -467,6 +504,10 @@ main(int argc, char *argv[])
 			break;
 		case 'A':
 			aname = strdup(optarg);
+			break;
+                case 'o':
+			*fargp++ = "-o";
+			*fargp++ = optarg;
 			break;
 		default:
 			usage();
@@ -505,7 +546,7 @@ main(int argc, char *argv[])
 		freeaddrinfo(ainfo);
 
 	init9p();
-	msize = _9pversion(MSIZE);
+	msize = _9pversion(Msize);
 	if(doauth){
 		authfid = _9pauth(AUTHFID, user, NULL);
 		ai = auth_proxy(authfid, auth_getkey, "proto=p9any role=client");
@@ -519,7 +560,7 @@ main(int argc, char *argv[])
 	DPRINT("About to fuse_main\n");
 	fuse_main(fargp - fusearg, fusearg, &fsops, NULL);
 	exit(0);
-}	
+}
 
 void
 dir2stat(struct stat *s, Dir *d)
@@ -543,7 +584,7 @@ dir2stat(struct stat *s, Dir *d)
 	s->st_atime = d->atime;
 	s->st_mtime = s->st_ctime = d->mtime;
 	s->st_rdev = 0;
-}	
+}
 
 void
 clearcache(const char *path)
@@ -584,7 +625,6 @@ addtocache(const char *path)
 	FFid	*f;
 	Dir	*d;
 	char	*dname;
-	long	n;
 
 	DPRINT("addtocache %s\n", path);
 	dname = estrdup(path);
@@ -595,18 +635,21 @@ addtocache(const char *path)
 	}
 	f->mode |= O_RDONLY;
 	if(_9popen(f) == -1){
+		_9pclunk(f);
 		free(dname);
 		return NULL;
 	}
 	DPRINT("addtocache about to dirread\n");
-	if((n = _9pdirread(f, &d)) < 0){
+	if(_9pdirread(f, &d) < 0){
+		_9pclunk(f);
 		free(dname);
 		return NULL;
 	}
+	_9pclunk(f);
 	free(dname);
 	return iscached(path);
 }
-	
+
 int
 iscachectl(const char *path)
 {
@@ -632,6 +675,6 @@ breakpath(char *dname)
 void
 usage(void)
 {
-	fprintf(stderr, "Usage: 9pfs [-anU] [-A aname] [-p port] [-u user] service mtpt\n");
+	fprintf(stderr, "Usage: 9pfs [-anUfd] [-A aname] [-p port] [-u user] [-o option] service mtpt\n");
 	exit(2);
 }

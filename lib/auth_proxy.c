@@ -181,19 +181,25 @@ Error:
 AuthInfo*
 auth_proxy(FFid *f, AuthGetkey *getkey, char *fmt, ...)
 {
-	int afd;
+	int afd, r;
 	char *p, *ftm, *rpcpath;
 	va_list arg;
 	AuthInfo *ai;
 	AuthRpc *rpc;
 
 	va_start(arg, fmt);
-	vasprintf(&p, fmt, arg);
+	r = vasprintf(&p, fmt, arg);
 	va_end(arg);
+
+	if(r < 0)
+		return nil;
 
 	ai = nil;
 	ftm = getenv("FACTOTUM");
-	asprintf(&rpcpath, "%s/rpc", ftm);
+	if(asprintf(&rpcpath, "%s/rpc", ftm) < 0){
+		free(p);
+		return nil;
+	}
 	afd = open(rpcpath, ORDWR);
 	if(afd < 0){
 		free(p);
